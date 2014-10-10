@@ -61,7 +61,7 @@ class GGPOChannel(object):
 	"""
 	Object representing an GGPO channel.
 	"""
-	def __init__(self, name, rom, topic, motd='Welcome to the unofficial GGPO server.\n\nThanks Papasi.\n'):
+	def __init__(self, name, rom, topic, motd='Welcome to the unofficial GGPO server.\nThis is still very beta, some things might not work as expected.\n\n'):
 		self.name = name
 		self.rom = rom
 		self.topic = topic
@@ -553,11 +553,45 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	def __init__(self, server_address, RequestHandlerClass):
 		self.servername = 'localhost'
 		self.channels = {} # Existing channels (GGPOChannel instances) by channelname
-		self.channels['ssf2t']=GGPOChannel("ssf2t", "ssf2t", "Super Street Fighter II: Turbo")
-		self.channels['game1']=GGPOChannel("game1", "game1", "Game one")
-		self.channels['game2']=GGPOChannel("game2", "game2", "Game two")
-		self.channels['xmcota']=GGPOChannel("xmcota", "xmcota", "X m cota")
+		self.channels['breakrev']=GGPOChannel("breakrev", "breakrev", "Breakers Revenge")
+		self.channels['ddsom']=GGPOChannel("ddsom", "ddsom", "D&D: Shadow over Mystara")
+		self.channels['fatfursp']=GGPOChannel("fatfursp", "fatfursp", "Fatal Fury Special")
+		self.channels['ffight']=GGPOChannel("ffight", "ffight", "Final Fight")
+		self.channels['garou']=GGPOChannel("garou", "garou", "Garou: Mark of the Wolves")
+		self.channels['hsf2']=GGPOChannel("hsf2", "hsf2", "Hyper Street Fighter 2")
+		self.channels['jojo']=GGPOChannel("jojo", "jojobane", "JoJo's Bizarre Adventure")
+		self.channels['kof2000']=GGPOChannel("kof2000", "kof2000", "King of Fighters 2000")
+		self.channels['kof2002']=GGPOChannel("kof2002", "kof2002", "King of Fighters 2002")
+		self.channels['kof97']=GGPOChannel("kof97", "kof97", "King of Fighters 97")
+		self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters 98 (Room 1)")
+		self.channels['kof98-2']=GGPOChannel("kof98-2", "kof98", "King of Fighters 98 (Room 2)")
+		self.channels['kof98-3']=GGPOChannel("kof98-3", "kof98", "King of Fighters 98 (Room 3)")
+		self.channels['lastbld2']=GGPOChannel("lastbld2", "lastbld2", "Last Blade 2")
 		self.channels['lobby']=GGPOChannel("lobby", '', "The Lobby")
+		self.channels['magdrop3']=GGPOChannel("magdrop3", "magdrop3", "Magical Drop III")
+		self.channels['msh']=GGPOChannel("msh", "msh", "Marvel Super Heroes")
+		self.channels['mshvsf']=GGPOChannel("mshvsf", "mshvsf", "Marvel Super Heroes Vs. Street Fighter")
+		self.channels['mslugx']=GGPOChannel("mslugx", "mslugx", "Metal Slug X - Super Vehicle-001")
+		self.channels['mvsc']=GGPOChannel("mvsc", "mvsc", "Marvel vs. Capcom")
+		self.channels['nwarr']=GGPOChannel("nwarr", "nwarr", "Night Warriors: Darkstalkers' Revenge")
+		self.channels['samsh5sp']=GGPOChannel("samsh5sp", "samsh5sp", "Samurai Shodown 5 Special")
+		self.channels['samsho2']=GGPOChannel("samsho2", "samsho2", "Samurai Shodown 2")
+		self.channels['samsho4']=GGPOChannel("samsho4", "samsho4", "Samurai Shodown IV")
+		self.channels['sf2ce']=GGPOChannel("sf2ce", "sf2ce", "Street Fighter II: Champion Edition")
+		self.channels['sf2koryu']=GGPOChannel("sf2koryu", "sf2koryu", "Street Fighter II Koryu")
+		self.channels['sfa']=GGPOChannel("sfa", "sfa", "Street Fighter Alpha")
+		self.channels['sfa2']=GGPOChannel("sfa2", "sfa2", "Street Fighter Alpha 2")
+		self.channels['sfa3']=GGPOChannel("sfa3", "sfa3:sfa3u", "Street Fighter Alpha 3")
+		self.channels['sfiii3']=GGPOChannel("sfiii3", "sfiii3n", "Street Fighter Tres")
+		self.channels['sfz2a']=GGPOChannel("sfz2a", "sfz2aa", "Street Fighter Alpha 2 Gold")
+		self.channels['sgemf']=GGPOChannel("sgemf", "sgemf", "Super Gem Fighter: Mini Mix")
+		self.channels['spf2t']=GGPOChannel("spf2t", "spf2t", "Super Puzzle Fighter 2 Turbo")
+		self.channels['ssf2t']=GGPOChannel("ssf2t", "ssf2t", "Super Street Fighter II: Turbo")
+		self.channels['unsupported']=GGPOChannel("unsupported", "unsupported", "Unsupported Games")
+		self.channels['vsav']=GGPOChannel("vsav", "vsav", "Vampire Savior")
+		self.channels['windgammers']=GGPOChannel("windgammers", "wjammers", "Windjammers")
+		self.channels['xmcota']=GGPOChannel("xmcota", "xmcota", "X-Men Children of the Atom")
+		self.channels['xmvsf']=GGPOChannel("xmvsf", "xmvsf", "X-Men vs. Street Fighter")
 		self.clients = {}  # Connected clients (GGPOClient instances) by nickname
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
