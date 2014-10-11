@@ -45,6 +45,8 @@ import socket
 import select
 import re
 import struct
+import time
+import random
 
 class GGPOError(Exception):
 	"""
@@ -80,10 +82,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.host = client_address	# Client's hostname / ip.
 		self.status = 0			# Client's status
 		self.opponent = None		# Client's opponent
+		self.quark = None		# Client's quark (in-game uri)
 		self.port = 6009		# Client's port
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
-		self.cc = "null"			# Client's country code
+		self.cc = "null"		# Client's country code
 		self.password = None		# Client's entered password
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
@@ -168,6 +171,45 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				msg=data[16:16+msglen]
 				params = msg,sequence
 
+			if (command==8):
+				if self.nick==None: return()
+				command="challenge"
+				nicklen=int(data[12:16].encode('hex'),16)
+				nick=data[16:16+nicklen]
+				channellen=int(data[16+nicklen:16+nicklen+4].encode('hex'),16)
+				channel=data[20+nicklen:20+nicklen+channellen]
+				params = nick,channel,sequence
+
+			if (command==9):
+				if self.nick==None: return()
+				command="accept"
+				nicklen=int(data[12:16].encode('hex'),16)
+				nick=data[16:16+nicklen]
+				channellen=int(data[16+nicklen:16+nicklen+4].encode('hex'),16)
+				channel=data[20+nicklen:20+nicklen+channellen]
+				params = nick,channel,sequence
+
+			if (command==0xa):
+				if self.nick==None: return()
+				command="decline"
+				nicklen=int(data[12:16].encode('hex'),16)
+				nick=data[16:16+nicklen]
+				params = nick,sequence
+
+			if (command==0x10):
+				if self.nick==None: return()
+				command="watch"
+				nicklen=int(data[12:16].encode('hex'),16)
+				nick=data[16:16+nicklen]
+				params = nick,sequence
+
+			if (command==0x1c):
+				if self.nick==None: return()
+				command="cancel"
+				nicklen=int(data[12:16].encode('hex'),16)
+				nick=data[16:16+nicklen]
+				params = nick,sequence
+
 			logging.info('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
 
 			try:
@@ -224,6 +266,149 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 						self.request.send(response)
 
 		self.request.close()
+
+	def handle_challenge(self, params):
+		# TODO: check that user is connected, in available state and in the same channel
+		nick, channel, sequence = params
+
+		# send ACK to the initiator of the challenge request
+		response = self.reply(sequence,'\x00\x00\x00\x00')
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+		# send the challenge request  to the challenged user
+		negseq=4294967292 #'\xff\xff\xff\xfc'
+		pdu=self.sizepad(self.nick)
+		pdu+=self.sizepad(self.channel.name)
+
+		response = self.reply(negseq,pdu)
+
+		for client in self.channel.clients:
+			if client.nick == nick:
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
+
+
+	def handle_accept(self, params):
+		nick, channel, sequence = params
+
+
+		for client in self.channel.clients:
+			if client.nick == nick:
+				break
+
+#		# send ACK to the user who wants to watch the running match
+#		response = self.reply(sequence,'\x00\x00\x00\x00')
+#		logging.debug('to %s: %r' % (self.client_ident(), response))
+#		self.send_queue.append(response)
+
+
+		self.opponent=nick
+		client.opponent=self.nick
+
+		self.status=3
+		client.status=3
+
+		params = 3,0
+		self.handle_status(params)
+		client.handle_status(params)
+
+		timestamp = int(time.time())
+		random1=random.randint(1000,9999)
+		random2=random.randint(10,99)
+		quark="quark:served,"+self.channel.name+",challenge-"+str(random1)+"-"+str(timestamp)+"."+str(random2)+",7000"
+
+		self.quark=quark
+		client.quark=quark
+
+		# send the quark stream uri to the user who accepted the challenge
+		negseq=4294967290 #'\xff\xff\xff\xfa'
+		pdu=''
+		pdu+=self.sizepad(self.nick)
+		pdu+=self.sizepad(self.opponent)
+		pdu+=self.sizepad(self.quark)
+
+		response = self.reply(negseq,pdu)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+
+		# send the quark stream uri to the challenge initiator
+		negseq=4294967290 #'\xff\xff\xff\xfa'
+		pdu=''
+		pdu+=self.sizepad(client.nick)
+		pdu+=self.sizepad(client.opponent)
+		pdu+=self.sizepad(client.quark)
+
+		response = self.reply(negseq,pdu)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		client.send_queue.append(response)
+
+	def handle_decline(self, params):
+		nick, sequence = params
+
+		# send ACK to the initiator of the decline request
+		response = self.reply(sequence,'\x00\x00\x00\x00')
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+		# inform of the decline to the initiator of the challenge
+		negseq=4294967291 #'\xff\xff\xff\xfb'
+		pdu=self.sizepad(self.nick)
+		#pdu+=self.sizepad(self.channel.name)
+
+		response = self.reply(negseq,pdu)
+
+		for client in self.channel.clients:
+			if client.nick == nick:
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
+
+	def handle_watch(self, params):
+
+		nick, sequence = params
+
+		# TODO: if nick is playing (status=3) send ACK, else send error
+
+		for client in self.channel.clients:
+			if client.nick == nick:
+				break
+
+		# send ACK to the user who wants to watch the running match
+		response = self.reply(sequence,'\x00\x00\x00\x00')
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+		# send the quark stream uri to the user who wants to watch
+		negseq=4294967290 #'\xff\xff\xff\xfa'
+		pdu=''
+		pdu+=self.sizepad(client.nick)
+		pdu+=self.sizepad(client.opponent)
+		pdu+=self.sizepad(client.quark)
+
+		response = self.reply(negseq,pdu)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+
+	def handle_cancel(self, params):
+		nick, sequence = params
+
+		# send ACK to the challenger user who wants to cancel the challenge
+		response = self.reply(sequence,'\x00\x00\x00\x00')
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+		# send the cancel action to the challenged user
+		negseq=4294967279 #'\xff\xff\xff\xef'
+		pdu=self.sizepad(self.nick)
+
+		response = self.reply(negseq,pdu)
+
+		for client in self.channel.clients:
+			if client.nick == nick:
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
 
 	def handle_unknown(self, params):
 		sequence = params
@@ -315,16 +500,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.status = status
 
 		# send ack to the client
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		if (sequence != 0):
+			response = self.reply(sequence,'\x00\x00\x00\x00')
+			logging.debug('to %s: %r' % (self.client_ident(), response))
+			self.send_queue.append(response)
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
 		pdu='\x00\x00\x00\x01'
 		pdu+='\x00\x00\x00\x01'
 		pdu+=self.sizepad(self.nick)
 		pdu+=self.pad2hex(self.status) #status
-		pdu+='\x00\x00\x00\x00' #p2(?)
+		if (self.opponent!=None):
+			pdu+=self.sizepad(self.opponent)
+		else:
+			pdu+='\x00\x00\x00\x00'
 		pdu+=self.sizepad(str(self.host[0]))
 		pdu+='\x00\x00\x00\x00' #unk1
 		pdu+='\x00\x00\x00\x00' #unk2
