@@ -82,7 +82,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def __init__(self, request, client_address, server):
 		self.nick = None		# Client's currently registered nickname
 		self.host = client_address	# Client's hostname / ip.
-		self.status = 0			# Client's status
+		self.status = 0			# Client's status (0=available, 1=away, 2=playing)
 		self.opponent = None		# Client's opponent
 		self.quark = None		# Client's quark (in-game uri)
 		self.port = 6009		# Client's port
@@ -494,7 +494,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.status = status
 
 		# send ack to the client
-		if (sequence != 0):
+		if (sequence >4):
 			self.send_ack(sequence)
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
@@ -700,8 +700,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def finish(self,response=None):
 		"""
 		The client conection is finished. Do some cleanup to ensure that the
-		client doesn't linger around in any channel or the client list, in case
-		the client didn't properly close the connection.
+		client doesn't linger around in any channel or the client list.
 		"""
 		logging.info('Client disconnected: %s' % (self.client_ident()))
 		if response == None:
@@ -720,6 +719,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			for client in self.channel.clients:
 				client.send_queue.append(response)
 				logging.debug('to %s: %r' % (client.client_ident(), response))
+				# if the gone client was playing against someone, update his status
+				if (client.opponent==self.nick):
+					client.opponent=None
 			self.channel.clients.remove(self)
 		if self.nick in self.server.clients:
 			self.server.clients.pop(self.nick)
