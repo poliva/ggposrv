@@ -255,8 +255,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle(self):
 		logging.info('Client connected: %s' % (self.client_ident(), ))
 
+		buf=''
 		while True:
-			buf = ''
 			ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
 
 			# Write any commands to the client
@@ -271,12 +271,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 				if not data:
 					break
-				elif len(data) > 0:
+				elif len(buf+data) > 4:
+					if len(buf)>0:
+						#logging.debug('BUF+DATA: [%r] + [%r]' % (buf,data))
+						data=buf+data
+						buf=''
 					response = self.parse(data)
 
 					if response:
 						logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
 						self.request.send(response)
+				else:
+					buf+=data
+					#logging.debug('BUF: %r' % buf)
+
 
 		self.request.close()
 
