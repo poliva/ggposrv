@@ -48,6 +48,8 @@ import struct
 import time
 import random
 
+ACK='\x00\x00\x00\x00'
+
 class GGPOError(Exception):
 	"""
 	Exception thrown by GGPO command handlers to notify client of a server/client error.
@@ -109,6 +111,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		length=4+len(pdu)
 		return self.pad2hex(length) + self.pad2hex(sequence) + pdu
 
+	def send_ack(self, sequence):
+		response = self.reply(sequence,ACK)
+		logging.debug('ACK to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
 	def parse(self, data):
 
 		response = ''
@@ -126,7 +133,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if (command==0):
 				command = "connect"
 				params = sequence
-
 			if (command==1):
 				command = "auth"
 				nicklen=int(data[12:16].encode('hex'),16)
@@ -272,9 +278,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		nick, channel, sequence = params
 
 		# send ACK to the initiator of the challenge request
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 		# send the challenge request  to the challenged user
 		negseq=4294967292 #'\xff\xff\xff\xfc'
@@ -298,10 +302,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				break
 
 #		# send ACK to the user who wants to watch the running match
-#		response = self.reply(sequence,'\x00\x00\x00\x00')
-#		logging.debug('to %s: %r' % (self.client_ident(), response))
-#		self.send_queue.append(response)
-
+#		self.send_ack(sequence)
 
 		self.opponent=nick
 		client.opponent=self.nick
@@ -348,9 +349,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		nick, sequence = params
 
 		# send ACK to the initiator of the decline request
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 		# inform of the decline to the initiator of the challenge
 		negseq=4294967291 #'\xff\xff\xff\xfb'
@@ -375,9 +374,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				break
 
 		# send ACK to the user who wants to watch the running match
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 		# send the quark stream uri to the user who wants to watch
 		negseq=4294967290 #'\xff\xff\xff\xfa'
@@ -395,9 +392,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		nick, sequence = params
 
 		# send ACK to the challenger user who wants to cancel the challenge
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 		# send the cancel action to the challenged user
 		negseq=4294967279 #'\xff\xff\xff\xef'
@@ -418,9 +413,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 	def handle_connect(self, params):
 		sequence = params
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 	def handle_motd(self, params):
 		sequence = params
@@ -461,9 +454,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.password = password
 
 			# auth successful
-			response = self.reply(sequence,'\x00\x00\x00\x00')
-			logging.debug('to %s: %r' % (self.client_ident(), response))
-			self.send_queue.append(response)
+			self.send_ack(sequence)
 
 			negseq=4294967293 #'\xff\xff\xff\xfd'
 			pdu='\x00\x00\x00\x02'
@@ -501,9 +492,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# send ack to the client
 		if (sequence != 0):
-			response = self.reply(sequence,'\x00\x00\x00\x00')
-			logging.debug('to %s: %r' % (self.client_ident(), response))
-			self.send_queue.append(response)
+			self.send_ack(sequence)
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
 		pdu='\x00\x00\x00\x01'
@@ -600,9 +589,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.channel = channel
 
 		# send the ACK to the client
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('JOIN ACK to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 		negseq=4294967295 #'\xff\xff\xff\xff'
 		response = self.reply(negseq,'')
@@ -639,9 +626,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		channel = self.channel
 
 		# send the ACK to the client
-		response = self.reply(sequence,'\x00\x00\x00\x00')
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
+		self.send_ack(sequence)
 
 		for client in channel.clients:
 			# Send message to all client in the channel
