@@ -116,6 +116,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('ACK to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
+	def get_client_from_nick(self,nick):
+		for client in self.channel.clients:
+			if client.nick == nick:
+				return client
+		# if not found, return self
+		return self
+
 	def parse(self, data):
 
 		response = ''
@@ -287,19 +294,17 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		response = self.reply(negseq,pdu)
 
-		for client in self.channel.clients:
-			if client.nick == nick:
-				logging.debug('to %s: %r' % (client.client_ident(), response))
-				client.send_queue.append(response)
+		client = self.get_client_from_nick(nick)
+		logging.debug('to %s: %r' % (client.client_ident(), response))
+		client.send_queue.append(response)
 
 
 	def handle_accept(self, params):
 		nick, channel, sequence = params
 
+		# TODO: make sure that nick has challenged the user that is doing the accept command
 
-		for client in self.channel.clients:
-			if client.nick == nick:
-				break
+		client = self.get_client_from_nick(nick)
 
 #		# send ACK to the user who wants to watch the running match
 #		self.send_ack(sequence)
@@ -307,10 +312,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.opponent=nick
 		client.opponent=self.nick
 
-		self.status=3
-		client.status=3
+		self.status=2
+		client.status=2
 
-		params = 3,0
+		params = 2,0
 		self.handle_status(params)
 		client.handle_status(params)
 
@@ -358,10 +363,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		response = self.reply(negseq,pdu)
 
-		for client in self.channel.clients:
-			if client.nick == nick:
-				logging.debug('to %s: %r' % (client.client_ident(), response))
-				client.send_queue.append(response)
+		client = self.get_client_from_nick(nick)
+		logging.debug('to %s: %r' % (client.client_ident(), response))
+		client.send_queue.append(response)
 
 	def handle_watch(self, params):
 
@@ -369,9 +373,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# TODO: if nick is playing (status=3) send ACK, else send error
 
-		for client in self.channel.clients:
-			if client.nick == nick:
-				break
+		client = self.get_client_from_nick(nick)
 
 		# send ACK to the user who wants to watch the running match
 		self.send_ack(sequence)
@@ -400,12 +402,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		response = self.reply(negseq,pdu)
 
-		for client in self.channel.clients:
-			if client.nick == nick:
-				logging.debug('to %s: %r' % (client.client_ident(), response))
-				client.send_queue.append(response)
+		client = self.get_client_from_nick(nick)
+		logging.debug('to %s: %r' % (client.client_ident(), response))
+		client.send_queue.append(response)
 
 	def handle_unknown(self, params):
+		# TODO: verify if the real server replies like this
 		sequence = params
 		response = self.reply(sequence,'\x00\x00\x00\x08')
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -487,6 +489,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 
 	def handle_status(self, params):
+
 		status,sequence = params
 		self.status = status
 
@@ -510,6 +513,19 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu+=self.sizepad(self.cc)
 		pdu+=self.sizepad(self.country)
 		pdu+=self.pad2hex(self.port)      # port
+		if (self.opponent!=None):
+			client = self.get_client_from_nick(self.opponent)
+			pdu+='\x00\x00\x00\x01'
+			pdu+=self.sizepad(client.nick)
+			self.pad2hex(client.status)
+			pdu+=self.sizepad(client.opponent)
+			pdu+=self.sizepad(str(client.host[0]))
+			pdu+='\x00\x00\x00\x00' #unk1
+			pdu+='\x00\x00\x00\x00' #unk2
+			pdu+=self.sizepad(client.city)
+			pdu+=self.sizepad(client.cc)
+			pdu+=self.sizepad(client.country)
+			pdu+=self.pad2hex(client.port)      # port
 
 		response = self.reply(negseq,pdu)
 
