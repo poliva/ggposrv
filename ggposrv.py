@@ -301,14 +301,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.request.close()
 
 	def get_client_from_quark(self, quark):
-		for client in self.server.clients:
-			if client.quark==quark and client.address[0]!=self.address[0]:
+		for nick in self.server.clients:
+			client = self.get_client_from_nick(nick)
+			if client.quark==quark and client.host[0]!=self.host[0]:
 				return client
 		return self
 
 	def get_myclient_from_quark(self, quark):
-		for client in self.server.clients:
-			if client.quark==quark and client.address[0]==self.address[0]:
+		for nick in self.server.clients:
+			client = self.get_client_from_nick(nick)
+			if client.quark==quark and client.host[0]==self.host[0]:
 				return client
 		return self
 
@@ -350,7 +352,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_ack(sequence)
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		pdu=self.sizepad(peer.address[0])
+		pdu=self.sizepad(peer.host[0])
 		pdu+=self.pad2hex(fbaport)    # TODO: this probably should be peer's fbaport
 		pdu+=self.pad2hex(peer.side)
 
