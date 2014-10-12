@@ -223,6 +223,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				quark=data[16:16+quarklen]
 				params = quark,sequence
 
+			if (command==0xf):
+				command="fba_privmsg"
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				msglen=int(data[16+quarklen:16+quarklen+4].encode('hex'),16)
+				msg=data[20+quarklen:20+quarklen+msglen]
+				params = quark,msg,sequence
+
 			if (command==0x10):
 				if self.nick==None: return()
 				command="watch"
@@ -314,9 +322,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				return client
 		return self
 
+	def handle_fba_privmsg(self, params):
+		"""
+		Handle sending messages inside the FBA emulator.
+		"""
+		quark, msg, sequence = params
+
+		# send the ACK to the client
+		self.send_ack(sequence)
+
+		# TODO: implement this
+
+
 	def handle_savestate(self, params):
 		sequence = params
 		self.send_ack(sequence)
+
+		# TODO: implement this
 
 	def handle_getnicks(self, params):
 		quark, sequence = params
