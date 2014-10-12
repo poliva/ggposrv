@@ -85,6 +85,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.status = 0			# Client's status (0=available, 1=away, 2=playing)
 		self.opponent = None		# Client's opponent
 		self.quark = None		# Client's quark (in-game uri)
+		self.side = 0			# Client's side: 0=P1, 1=P2
 		self.port = 6009		# Client's port
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
@@ -209,12 +210,29 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				nick=data[16:16+nicklen]
 				params = nick,sequence
 
+			if (command==0xb):
+				command="getpeer"
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				fbaport=int(data[16+quarklen:16+quarklen+4].encode('hex'),16)
+				params = quark,fbaport,sequence
+
+			if (command==0xc):
+				command="getnicks"
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				params = quark,sequence
+
 			if (command==0x10):
 				if self.nick==None: return()
 				command="watch"
 				nicklen=int(data[12:16].encode('hex'),16)
 				nick=data[16:16+nicklen]
 				params = nick,sequence
+
+			if (command==0x11):
+				command="savestate"
+				params = sequence
 
 			if (command==0x1c):
 				if self.nick==None: return()
@@ -255,7 +273,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle(self):
 		logging.info('Client connected: %s' % (self.client_ident(), ))
 
-		buf=''
+		data=''
 		while True:
 			ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
 
@@ -267,26 +285,78 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			# See if the client has any commands for us.
 			if len(ready_to_read) == 1 and ready_to_read[0] == self.request:
-				data = self.request.recv(1024)
+				data+= self.request.recv(1024)
 
 				if not data:
 					break
-				elif len(buf+data) > 4:
-					if len(buf)>0:
-						#logging.debug('BUF+DATA: [%r] + [%r]' % (buf,data))
-						data=buf+data
-						buf=''
+				elif len(data) >= int(data[0:4].encode('hex'),16):
 					response = self.parse(data)
+					data=''
 
 					if response:
 						logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
 						self.request.send(response)
-				else:
-					buf+=data
-					#logging.debug('BUF: %r' % buf)
 
 
 		self.request.close()
+
+	def get_client_from_quark(self, quark):
+		for client in self.server.clients:
+			if client.quark==quark and client.address[0]!=self.address[0]:
+				return client
+		return self
+
+	def get_myclient_from_quark(self, quark):
+		for client in self.server.clients:
+			if client.quark==quark and client.address[0]==self.address[0]:
+				return client
+		return self
+
+	def handle_savestate(self, params):
+		sequence = params
+		self.send_ack(sequence)
+
+	def handle_getnicks(self, params):
+		quark, sequence = params
+
+		peer=self.get_client_from_quark(quark)
+		myself=self.get_myclient_from_quark(quark)
+
+		pdu='\x00\x00\x00\x00'
+		if (peer.side==0):
+			pdu+=self.sizepad(peer.nick)
+			pdu+=self.sizepad(myself.nick)
+		else:
+			pdu+=self.sizepad(myself.nick)
+			pdu+=self.sizepad(peer.nick)
+		pdu+='\x00\x00\x00\x00'
+		pdu+='\x00\x00\x00\x00'
+		pdu+='\x00\x00\x00\x04'
+		pdu+='\xff\xff\xff\xf5'
+		pdu+='\x00\x00\x00\x08'
+		pdu+='\xff\xff\xff\xf6'
+		pdu+='\x00\x00\x00\x01'
+
+		response = self.reply(sequence,pdu)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+
+	def handle_getpeer(self, params):
+		quark, fbaport, sequence = params
+
+		peer=self.get_client_from_quark(quark)
+
+		# send ack to the client's ggpofba
+		self.send_ack(sequence)
+
+		negseq=4294967289 #'\xff\xff\xff\xf9'
+		pdu=self.sizepad(peer.address[0])
+		pdu+=self.pad2hex(fbaport)    # TODO: this probably should be peer's fbaport
+		pdu+=self.pad2hex(peer.side)
+
+		response = self.reply(negseq,pdu)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
 
 	def handle_challenge(self, params):
 		# TODO: check that user is connected, in available state and in the same channel
@@ -294,6 +364,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# send ACK to the initiator of the challenge request
 		self.send_ack(sequence)
+
+		self.side=0
 
 		# send the challenge request  to the challenged user
 		negseq=4294967292 #'\xff\xff\xff\xfc'
@@ -317,6 +389,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 #		# send ACK to the user who wants to watch the running match
 #		self.send_ack(sequence)
 
+		self.side=1
 		self.opponent=nick
 		client.opponent=self.nick
 
@@ -330,7 +403,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
 		random2=random.randint(10,99)
-		quark="quark:served,"+self.channel.name+",challenge-"+str(random1)+"-"+str(timestamp)+"."+str(random2)+",7000"
+		quark="challenge-"+str(random1)+"-"+str(timestamp)+"."+str(random2)
 
 		self.quark=quark
 		client.quark=quark
@@ -340,7 +413,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(self.nick)
 		pdu+=self.sizepad(self.opponent)
-		pdu+=self.sizepad(self.quark)
+		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -352,7 +425,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad(client.opponent)
-		pdu+=self.sizepad(client.quark)
+		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -391,7 +464,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad(client.opponent)
-		pdu+=self.sizepad(client.quark)
+		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
