@@ -124,6 +124,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if client_nick == nick:
 				return self.server.clients[nick]
 		# if not found, return self
+		logging.debug('[%s] Could not find client: %s' % (self.client_ident(), nick))
 		return self
 
 	def parse(self, data):
@@ -417,7 +418,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if peer==self:
 			logging.debug('[%s] couldn\'t find peer: %s' % (self.client_ident() , peer.client_ident()))
-		else
+		else:
 			logging.debug('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
@@ -457,8 +458,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		client = self.get_client_from_nick(nick)
 
-#		# send ACK to the user who wants to watch the running match
-#		self.send_ack(sequence)
+		#logging.debug('[%s] looking for nick: %s found %s' % (self.client_ident(), nick, client.nick))
 
 		self.side=1
 		self.opponent=nick
@@ -469,7 +469,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		params = 2,0
 		self.handle_status(params)
-		client.handle_status(params)
 
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
@@ -494,12 +493,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# send the quark stream uri to the challenge initiator
 		negseq=4294967290 #'\xff\xff\xff\xfa'
 		pdu=''
-		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad(client.opponent)
+		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
 
 		response = self.reply(negseq,pdu)
-		logging.debug('to %s: %r' % (self.client_ident(), response))
+		logging.debug('to %s: %r' % (client.client_ident(), response))
 		client.send_queue.append(response)
 
 	def handle_decline(self, params):
@@ -850,7 +849,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		Return the client identifier as included in many command replies.
 		"""
-		return('%s@%s' % (self.nick, self.host[0]))
+		return('%s@%s:%s' % (self.nick, self.host[0], self.host[1]))
 
 	def finish(self,response=None):
 		"""
@@ -878,7 +877,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				if (client.opponent==self.nick):
 					client.opponent=None
 			self.channel.clients.remove(self)
-		if self.nick in self.server.clients:
+		if self.nick in self.server.clients and self.fba==False:
 			self.server.clients.pop(self.nick)
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
