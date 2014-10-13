@@ -356,12 +356,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		negseq=4294967288 #'\xff\xff\xff\xf8'
 		pdu=self.sizepad(quark)
-		pdu+=self.sizepad(peer.nick)
+		pdu+=self.sizepad(self.nick)
 		pdu+=self.sizepad(msg)
 
-		response = self.reply(sequence,pdu)
+		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (peer.client_ident(), response))
 		peer.send_queue.append(response)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
 
