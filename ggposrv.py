@@ -88,7 +88,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.quark = None		# Client's quark (in-game uri)
 		self.fba = False		# Is the client an emulator?
 		self.fbaport = 0		# Emulator's fbaport
-		self.side = 0			# Client's side: 0=P1, 1=P2
+		self.side = 0			# Client's side: 1=P1, 2=P2
 		self.port = 6009		# Client's port
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
@@ -382,14 +382,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.side=myself.side
 
 		pdu='\x00\x00\x00\x00'
-		if (client.side==0):
+		if (client.side==1):
 			pdu+=self.sizepad(client.nick)
 			pdu+=self.sizepad(myself.nick)
+		elif (client.side==2):
+			pdu+=self.sizepad(myself.nick)
+			pdu+=self.sizepad(client.nick)
 		else:
-			pdu+=self.sizepad(myself.nick)
-			pdu+=self.sizepad(client.nick)
+			# something went wrong
+			pdu+='\x00\x00\x00\x00'
+			pdu+='\x00\x00\x00\x00'
 		pdu+='\x00\x00\x00\x00'
-		pdu+='\x00\x00\x00\x00' # TODO: this might be the num of watchers
+		pdu+='\x00\x00\x00\x00' # TODO: this is the number of spectators
 		pdu+='\x00\x00\x00\x04'
 		pdu+='\xff\xff\xff\xf5'
 		pdu+='\x00\x00\x00\x08'
@@ -422,10 +426,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			logging.debug('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
 
+		myself=self.get_myclient_from_quark(quark)
+
 		negseq=4294967289 #'\xff\xff\xff\xf9'
 		pdu=self.sizepad(peer.host[0])
 		pdu+=self.pad2hex(peer.fbaport)    # TODO: check if this should be our fbaport or peer's fbaport
-		pdu+=self.pad2hex(peer.side)
+		if myself.side-1==1:
+			pdu+=self.pad2hex(0)
+		else:
+			pdu+=self.pad2hex(1)
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -438,7 +447,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# send ACK to the initiator of the challenge request
 		self.send_ack(sequence)
 
-		self.side=0
+		self.side=1
 
 		# send the challenge request  to the challenged user
 		negseq=4294967292 #'\xff\xff\xff\xfc'
@@ -461,7 +470,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		#logging.debug('[%s] looking for nick: %s found %s' % (self.client_ident(), nick, client.nick))
 
-		self.side=1
+		self.side=2
 		self.opponent=nick
 		client.opponent=self.nick
 
@@ -472,7 +481,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client.status=2
 
 		params = 2,0
-		self.handle_status(params)
+		#self.handle_status(params)
+		client.handle_status(params)
 
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
@@ -485,8 +495,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# send the quark stream uri to the user who accepted the challenge
 		negseq=4294967290 #'\xff\xff\xff\xfa'
 		pdu=''
-		pdu+=self.sizepad(self.nick)
 		pdu+=self.sizepad(self.opponent)
+		pdu+=self.sizepad(self.nick)
 		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
 
 		response = self.reply(negseq,pdu)
@@ -497,8 +507,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# send the quark stream uri to the challenge initiator
 		negseq=4294967290 #'\xff\xff\xff\xfa'
 		pdu=''
-		pdu+=self.sizepad(client.opponent)
 		pdu+=self.sizepad(client.nick)
+		pdu+=self.sizepad(client.opponent)
 		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
 
 		response = self.reply(negseq,pdu)
@@ -895,16 +905,19 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			myself.side=0
 			myself.opponent=None
 			myself.quark=None
-			myself.status=myself.previous_status
+			if (myself.previous_status!=None):
+				myself.status=myself.previous_status
+			else:
+				myself.status=0
 			myself.previous_status=None
 			params = myself.status,0
 			myself.handle_status(params)
 
 			# return the FBA peer's client to non-playing state too
-			client=self.get_client_from_quark(self.quark)
-			client.side=0
-			client.opponent=None
-			cleint.quark=None
+			#client=self.get_client_from_quark(self.quark)
+			#client.side=0
+			#client.opponent=None
+			#client.quark=None
 
 		logging.info('Connection finished: %s' % (self.client_ident()))
 
