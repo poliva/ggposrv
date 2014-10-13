@@ -246,6 +246,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				command="savestate"
 				params = sequence
 
+			if (command==0x14):
+				command="spectator"
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				params = quark,sequence
+
 			if (command==0x1c):
 				if self.nick==None: return()
 				command="cancel"
@@ -322,6 +328,25 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				return client
 		return self
 
+	def get_p1_from_quark(self, quark):
+		"""
+		Returns a GGPOClient object representing Quark's P1, or self if not found
+		"""
+		for host in self.server.connections:
+			client = self.server.connections[host]
+			if client.fba==True and client.quark==quark and client.side==1:
+				return client
+		return self
+
+	def get_p2_from_quark(self, quark):
+		"""
+		Returns a GGPOClient object representing Quark's P1, or self if not found
+		"""
+		for host in self.server.connections:
+			client = self.server.connections[host]
+			if client.fba==True and client.quark==quark and client.side==2:
+				return client
+		return self
 
 	def get_client_from_quark(self, quark):
 		"""
@@ -441,6 +466,29 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
+	def handle_spectator(self,params):
+		quark, sequence = params
+
+		# send ack to the client's ggpofba
+		self.send_ack(sequence)
+
+		p1=self.get_p1_from_quark(quark)
+		p2=self.get_p2_from_quark(quark)
+
+		negseq=4294967285 #'\xff\xff\xff\xf5'
+		pdu=''
+		response = self.reply(negseq,pdu)
+
+		negseq=4294967286 #'\xff\xff\xff\xf6'
+		pdu='\x00\x00\x00\x01'			 # TODO: this might be the number of espectators?
+		response+=self.reply(negseq,pdu)
+
+		# this updates the number of spectators in both players FBAs
+		logging.debug('to %s: %r' % (p1.client_ident(), response))
+		p1.send_queue.append(response)
+		logging.debug('to %s: %r' % (p2.client_ident(), response))
+		p2.send_queue.append(response)
+
 	def handle_challenge(self, params):
 		# TODO: check that user is connected, in available state and in the same channel
 		nick, channel, sequence = params
@@ -537,7 +585,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		nick, sequence = params
 
-		# TODO: if nick is playing (status=3) send ACK, else send error
+		# TODO: if nick is playing (status=2) send ACK, else send error
 
 		client = self.get_client_from_nick(nick)
 
@@ -549,7 +597,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad(client.opponent)
-		pdu+=self.sizepad("quark:served,"+self.channel.name+","+client.quark+",7000")
+		pdu+=self.sizepad("quark:stream,"+self.channel.name+","+client.quark+",7000")
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
