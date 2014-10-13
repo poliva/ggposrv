@@ -482,8 +482,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client.status=2
 
 		params = 2,0
-		#self.handle_status(params)
 		client.handle_status(params)
+		self.handle_status(params)
 
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
@@ -549,7 +549,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad(client.opponent)
-		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
+		pdu+=self.sizepad("quark:served,"+self.channel.name+","+client.quark+",7000")
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -890,8 +890,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# Client is gone without properly QUITing or PARTing this
 			# channel.
 			for client in self.channel.clients:
-				client.send_queue.append(response)
-				logging.debug('to %s: %r' % (client.client_ident(), response))
+				if (client!=self):
+					client.send_queue.append(response)
+					logging.debug('to %s: %r' % (client.client_ident(), response))
 				# if the gone client was playing against someone, update his status
 				if (client.opponent==self.nick):
 					client.opponent=None
