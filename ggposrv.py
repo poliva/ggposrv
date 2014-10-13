@@ -88,7 +88,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.quark = None		# Client's quark (in-game uri)
 		self.fba = False		# Is the client an emulator?
 		self.fbaport = 0		# Emulator's fbaport
-		self.side = 0			# Client's side: 1=P1, 2=P2 (0=spectator)
+		self.side = 0			# Client's side: 1=P1, 2=P2 (0=spectator before savestate, 3=spectator after savestate)
 		self.port = 6009		# Client's port
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
@@ -244,7 +244,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			if (command==0x11):
 				command="savestate"
-				params = sequence
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				block1=data[16+quarklen:20+quarklen]
+				block2=data[20+quarklen:24+quarklen]
+				#buflen=int(data[24+quarklen:24+quarklen+4].encode('hex'),16)
+				#gamebuf=data[28+quarklen:28+quarklen+buflen]
+				gamebuf=data[24+quarklen:]
+				params = quark,block1,block2,gamebuf,sequence
 
 			if (command==0x12):
 				#    size           seq num             command           quarklen                quark                    buflen            buffer...
@@ -252,8 +259,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				command="gamebuffer"
 				quarklen=int(data[12:16].encode('hex'),16)
 				quark=data[16:16+quarklen]
-				buflen=int(data[16+quarklen:16+quarklen+4].encode('hex'),16)
-				gamebuf=data[20+quarklen:20+quarklen+buflen]
+				#buflen=int(data[16+quarklen:16+quarklen+4].encode('hex'),16)
+				#gamebuf=data[20+quarklen:20+quarklen+buflen]
+				gamebuf=data[20+quarklen:]
 				params = quark,gamebuf,sequence
 
 			if (command==0x14):
@@ -414,12 +422,25 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if client.fba==True and client.quark==quark and client.side==0:
 				logging.debug('to %s: %r' % (client.client_ident(), response))
 				client.send_queue.append(response)
+				client.side=3
 
 	def handle_savestate(self, params):
-		sequence = params
+		quark, block1, block2, gamebuf, sequence = params
+
+		# send ACK to the player
 		self.send_ack(sequence)
 
-		# TODO: send to the watcher: ff ff ff f3 + gamebuf
+		negseq=4294967283 #'\xff\xff\xff\xf3'
+		pdu=block2+block1+gamebuf
+		response = self.reply(negseq,pdu)
+
+		# TODO: do we have to send this to all the spectators?
+
+		for host in self.server.connections:
+			client = self.server.connections[host]
+			if client.fba==True and client.quark==quark and client.side==3:
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
 
 	def handle_getnicks(self, params):
 		quark, sequence = params
