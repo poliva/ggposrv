@@ -88,7 +88,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.quark = None		# Client's quark (in-game uri)
 		self.fba = False		# Is the client an emulator?
 		self.fbaport = 0		# Emulator's fbaport
-		self.side = 0			# Client's side: 1=P1, 2=P2
+		self.side = 0			# Client's side: 1=P1, 2=P2 (0=spectator)
 		self.port = 6009		# Client's port
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
@@ -403,13 +403,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_gamebuffer(self, params):
 		quark, gamebuf, sequence = params
 
-		#TODO: send to the watcher: ff ff ff f4 + gamebuf
+		negseq=4294967284 #'\xff\xff\xff\xf4'
+		pdu=gamebuf
+		response = self.reply(negseq,pdu)
+
+		# TODO: do we have to send this to all the spectators?
+
+		for host in self.server.connections:
+			client = self.server.connections[host]
+			if client.fba==True and client.quark==quark and client.side==0:
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
 
 	def handle_savestate(self, params):
 		sequence = params
 		self.send_ack(sequence)
 
-		# TODO: implement this
+		# TODO: send to the watcher: ff ff ff f3 + gamebuf
 
 	def handle_getnicks(self, params):
 		quark, sequence = params
@@ -485,6 +495,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
+
+		self.fba=True
+		self.quark=quark
 
 		p1=self.get_p1_from_quark(quark)
 		p2=self.get_p2_from_quark(quark)
