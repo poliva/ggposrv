@@ -85,6 +85,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.status = 0			# Client's status (0=available, 1=away, 2=playing)
 		self.opponent = None		# Client's opponent
 		self.quark = None		# Client's quark (in-game uri)
+		self.fba = False		# Is the client an emulator?
+		self.fbaport = 0		# Emulator's fbaport
 		self.side = 0			# Client's side: 0=P1, 1=P2
 		self.port = 6009		# Client's port
 		self.city = "null"		# Client's city
@@ -118,9 +120,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_queue.append(response)
 
 	def get_client_from_nick(self,nick):
-		for client in self.channel.clients:
-			if client.nick == nick:
-				return client
+		for client_nick in self.server.clients:
+			if client_nick == nick:
+				return self.server.clients[nick]
 		# if not found, return self
 		return self
 
@@ -308,17 +310,34 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		self.request.close()
 
+	def get_peer_from_quark(self, quark):
+		"""
+		Returns a GGPOClient object representing our FBA peer's ggpofba connection, or self if not found
+		"""
+		for host in self.server.connections:
+			client = self.server.connections[host]
+			if client.fba==True and client.quark==quark and client.host!=self.host:
+				return client
+		return self
+
+
 	def get_client_from_quark(self, quark):
+		"""
+		Returns a GGPOClient object representing our FBA peer's client connection, or self if not found
+		"""
 		for nick in self.server.clients:
 			client = self.get_client_from_nick(nick)
-			if client.quark==quark and client.host[0]!=self.host[0]:
+			if client.fba==False and client.quark==quark and client.host[0]!=self.host[0]:
 				return client
 		return self
 
 	def get_myclient_from_quark(self, quark):
+		"""
+		Returns a GGPOClient object representing our own client connection, or self if not found
+		"""
 		for nick in self.server.clients:
 			client = self.get_client_from_nick(nick)
-			if client.quark==quark and client.host[0]==self.host[0]:
+			if client.fba==False and client.quark==quark and client.host[0]==self.host[0]:
 				return client
 		return self
 
@@ -329,9 +348,19 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		quark, msg, sequence = params
 
 		# send the ACK to the client
-		self.send_ack(sequence)
+		#self.send_ack(sequence)
 
-		# TODO: implement this
+		peer=self.get_peer_from_quark(quark)
+
+		negseq=4294967288 #'\xff\xff\xff\xf8'
+		pdu=self.sizepad(quark)
+		pdu+=self.sizepad(peer.nick)
+		pdu+=self.sizepad(msg)
+
+		response = self.reply(sequence,pdu)
+		logging.debug('to %s: %r' % (peer.client_ident(), response))
+		peer.send_queue.append(response)
+		self.send_queue.append(response)
 
 
 	def handle_savestate(self, params):
@@ -343,18 +372,22 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_getnicks(self, params):
 		quark, sequence = params
 
-		peer=self.get_client_from_quark(quark)
+		client=self.get_client_from_quark(quark)
 		myself=self.get_myclient_from_quark(quark)
 
+		if (myself!=self):
+			self.nick=myself.nick
+			self.side=myself.side
+
 		pdu='\x00\x00\x00\x00'
-		if (peer.side==0):
-			pdu+=self.sizepad(peer.nick)
+		if (client.side==0):
+			pdu+=self.sizepad(client.nick)
 			pdu+=self.sizepad(myself.nick)
 		else:
 			pdu+=self.sizepad(myself.nick)
-			pdu+=self.sizepad(peer.nick)
+			pdu+=self.sizepad(client.nick)
 		pdu+='\x00\x00\x00\x00'
-		pdu+='\x00\x00\x00\x00'
+		pdu+='\x00\x00\x00\x00' # TODO: this might be the num of watchers
 		pdu+='\x00\x00\x00\x04'
 		pdu+='\xff\xff\xff\xf5'
 		pdu+='\x00\x00\x00\x08'
@@ -368,14 +401,28 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_getpeer(self, params):
 		quark, fbaport, sequence = params
 
-		peer=self.get_client_from_quark(quark)
-
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
 
+		self.fba=True
+		self.quark=quark
+		self.fbaport=fbaport
+
+		i=0
+		while True:
+			peer=self.get_peer_from_quark(quark)
+			time.sleep(5)
+			if peer!=self or i>=10:
+				break
+
+		if peer==self:
+			logging.debug('[%s] couldn\'t find peer: %s' % (self.client_ident() , peer.client_ident()))
+		else
+			logging.debug('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
+
 		negseq=4294967289 #'\xff\xff\xff\xf9'
 		pdu=self.sizepad(peer.host[0])
-		pdu+=self.pad2hex(fbaport)    # TODO: this probably should be peer's fbaport
+		pdu+=self.pad2hex(peer.fbaport)    # TODO: check if this should be our fbaport or peer's fbaport
 		pdu+=self.pad2hex(peer.side)
 
 		response = self.reply(negseq,pdu)
@@ -521,6 +568,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_connect(self, params):
 		sequence = params
 		self.send_ack(sequence)
+		self.server.connections[self.host] = self
 
 	def handle_motd(self, params):
 		sequence = params
@@ -562,6 +610,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			# auth successful
 			self.send_ack(sequence)
+			if self.host in self.server.connections:
+				self.server.connections.pop(self.host)
 
 			negseq=4294967293 #'\xff\xff\xff\xfd'
 			pdu='\x00\x00\x00\x02'
@@ -830,6 +880,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.channel.clients.remove(self)
 		if self.nick in self.server.clients:
 			self.server.clients.pop(self.nick)
+		if self.host in self.server.connections:
+			self.server.connections.pop(self.host)
 		logging.info('Connection finished: %s' % (self.client_ident()))
 
 	def __repr__(self):
@@ -889,7 +941,8 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['windgammers']=GGPOChannel("windgammers", "wjammers", "Windjammers")
 		self.channels['xmcota']=GGPOChannel("xmcota", "xmcota", "X-Men Children of the Atom")
 		self.channels['xmvsf']=GGPOChannel("xmvsf", "xmvsf", "X-Men vs. Street Fighter")
-		self.clients = {}  # Connected clients (GGPOClient instances) by nickname
+		self.clients = {}  # Connected authenticated clients (GGPOClient instances) by nickname
+		self.connections = {} # Connected unauthenticated clients (GGPOClient instances) by host
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
 class Daemon:
