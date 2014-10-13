@@ -537,6 +537,21 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (p2.client_ident(), response))
 		p2.send_queue.append(response)
 
+	def spectator_leave(self, quark):
+
+		p1=self.get_p1_from_quark(quark)
+		p2=self.get_p2_from_quark(quark)
+
+		negseq=4294967286 #'\xff\xff\xff\xf6'
+		pdu='\x00\x00\x00\x00'			 # TODO: this might be the number of espectators?
+		response=self.reply(negseq,pdu)
+
+		# this updates the number of spectators in both players FBAs
+		logging.debug('to %s: %r' % (p1.client_ident(), response))
+		p1.send_queue.append(response)
+		logging.debug('to %s: %r' % (p2.client_ident(), response))
+		p2.send_queue.append(response)
+
 	def handle_challenge(self, params):
 		# TODO: check that user is connected, in available state and in the same channel
 		nick, channel, sequence = params
@@ -1000,6 +1015,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			# return the client to non-playing state when the emulator closes
 			myself=self.get_myclient_from_quark(self.quark)
+
+			if (myself.side==0 or myself.side==3): # this client is an spectator
+				self.spectator_leave(self.quark)
+
 			myself.side=0
 			myself.opponent=None
 			myself.quark=None
