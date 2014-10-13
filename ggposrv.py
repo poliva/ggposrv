@@ -83,6 +83,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.nick = None		# Client's currently registered nickname
 		self.host = client_address	# Client's hostname / ip.
 		self.status = 0			# Client's status (0=available, 1=away, 2=playing)
+		self.previous_status = None	# Client's previous status (0=available, 1=away, 2=playing)
 		self.opponent = None		# Client's opponent
 		self.quark = None		# Client's quark (in-game uri)
 		self.fba = False		# Is the client an emulator?
@@ -464,6 +465,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.opponent=nick
 		client.opponent=self.nick
 
+		self.previous_status=self.status
+		client.previous_status=client.status
+
 		self.status=2
 		client.status=2
 
@@ -645,11 +649,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_status(self, params):
 
 		status,sequence = params
-		self.status = status
 
 		# send ack to the client
 		if (sequence >4):
 			self.send_ack(sequence)
+
+		if self.status == 2 and sequence!=0:
+			self.previous_status = status
+		else:
+			self.status = status
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
 		pdu='\x00\x00\x00\x01'
@@ -881,6 +889,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.server.clients.pop(self.nick)
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
+
+			# return the client to non-playing state when the emulator closes
+			myself=self.get_myclient_from_quark(self.quark)
+			myself.side=0
+			myself.opponent=None
+			myself.quark=None
+			myself.status=myself.previous_status
+			myself.previous_status=None
+			params = myself.status,0
+			myself.handle_status(params)
+
+			# return the FBA peer's client to non-playing state too
+			client=self.get_client_from_quark(self.quark)
+			client.side=0
+			client.opponent=None
+			cleint.quark=None
+
 		logging.info('Connection finished: %s' % (self.client_ident()))
 
 	def __repr__(self):
