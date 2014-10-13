@@ -246,6 +246,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				command="savestate"
 				params = sequence
 
+			if (command==0x12):
+				#    size           seq num             command           quarklen                quark                    buflen            buffer...
+				# [\x00\x00+f] [\x00\x00\x00\x07] [\x00\x00\x00\x12] [\x00\x00\x00\x1c] [challenge-3956-1413215783.82] [\x00\x00+6] [\x00\x05f4x\x01\xed\x9d\t`T\xd5\xd5\xc7\xef$\xb3\xa...]
+				command="gamebuffer"
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				buflen=int(data[16+quarklen:16+quarklen+4].encode('hex'),16)
+				gamebuf=data[20+quarklen:20+quarklen+buflen]
+				params = quark,gamebuf,sequence
+
 			if (command==0x14):
 				command="spectator"
 				quarklen=int(data[12:16].encode('hex'),16)
@@ -390,6 +400,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
+	def handle_gamebuffer(self, params):
+		quark, gamebuf, sequence = params
+
+		#TODO: send to the watcher: ff ff ff f4 + gamebuf
 
 	def handle_savestate(self, params):
 		sequence = params
