@@ -1091,9 +1091,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					# this will kill the emulators to avoid assertion failed errors with future players
 					# produces an ugly "guru meditation" error on the peer's FBA, but lets the player
 					# do another game without having to cross challenge
-					logging.info("[%s] killing both FBAs" % (self.client_ident()))
-					quarkobject.p1.send_queue.append('\xff\xff\x00\x00\xde\xad')
-					quarkobject.p2.send_queue.append('\xff\xff\x00\x00\xde\xad')
+					# --- comenting it for now, as it freezes the windows client :/
+					#logging.info("[%s] killing both FBAs" % (self.client_ident()))
+					#quarkobject.p1.send_queue.append('\xff\xff\x00\x00\xde\xad')
+					#quarkobject.p2.send_queue.append('\xff\xff\x00\x00\xde\xad')
 					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
 					self.server.quarks.pop(self.quark)
 
