@@ -1010,43 +1010,59 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				if (client.opponent==self.nick):
 					client.opponent=None
 			self.channel.clients.remove(self)
+			logging.info("[%s] removing myself from channel" % (self.client_ident()))
+
+		if self.nick in self.server.clients and self.fba==False:
+			self.server.clients.pop(self.nick)
+			logging.info("[%s] removing myself from server clients" % (self.client_ident()))
 
 		# remove quark if we are a player that closes ggpofba
 		if self.quark!=None:
 			try:
-				if self.server.quarks[self.quark].p1==self or self.server.quarks[self.quark].p2==self:
+				quarkobject = self.server.quarks[self.quark]
+				if quarkobject.p1==self or quarkobject.p2==self:
+					quarkobject.p1.opponent=None
+					quarkobject.p2.opponent=None
+					logging.info("[%s] assigning %s opponent to None " % (self.client_ident(), quarkobject.p1.nick))
+					logging.info("[%s] assigning %s opponent to None " % (self.client_ident(), quarkobject.p2.nick))
+					# this will kill the emulators to avoid assertion failed errors with future players
+					# produces an ugly "guru meditation" error on the peer's FBA, but lets the player
+					# do another game without having to cross challenge
+					logging.info("[%s] killing both FBAs" % (self.client_ident()))
+					quarkobject.p1.send_queue.append('\xff\xff\x00\x00\xde\xad')
+					quarkobject.p2.send_queue.append('\xff\xff\x00\x00\xde\xad')
+					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
 					self.server.quarks.pop(self.quark)
 			except KeyError:
 				pass
 
-		if self.nick in self.server.clients and self.fba==False:
-			self.server.clients.pop(self.nick)
+		# return the client to non-playing state when the emulator closes
+		if (self.side==0 or self.side==3) and self.quark!=None:
+			logging.info("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
+			# this client is an spectator
+			try:
+				self.spectator_leave(self.quark)
+			except KeyError:
+				pass
+		else:
+			# this client is a player
+			myself=self.get_myclient_from_quark(self.quark)
+			logging.info("[%s] trying to destroy: %s" % (self.client_ident(), myself.client_ident()))
+
+			myself.side=0
+			myself.opponent=None
+			myself.quark=None
+			if (myself.previous_status!=None and myself.previous_status!=2):
+				myself.status=myself.previous_status
+			else:
+				myself.status=0
+			myself.previous_status=None
+			params = myself.status,0
+			myself.handle_status(params)
 
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
-
-			if self.fba==True:
-				# return the client to non-playing state when the emulator closes
-				if (self.side==0 or self.side==3) and self.quark!=None:
-					# this client is an spectator
-					try:
-						self.spectator_leave(self.quark)
-					except KeyError:
-						pass
-				else:
-					# this client is a player
-					myself=self.get_myclient_from_quark(self.quark)
-
-					myself.side=0
-					myself.opponent=None
-					myself.quark=None
-					if (myself.previous_status!=None):
-						myself.status=myself.previous_status
-					else:
-						myself.status=0
-					myself.previous_status=None
-					params = myself.status,0
-					myself.handle_status(params)
+			logging.info("[%s] removing myself from server connections" % (self.client_ident()))
 
 		logging.info('Connection finished: %s' % (self.client_ident()))
 
