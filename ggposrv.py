@@ -496,6 +496,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		elif self.side==2 and quarkobject.p2==None:
 			quarkobject.p2=self
 			quarkobject.p2client=myself
+		else:
+			# you are challenging yourself
+			quarkobject.p1=self
+			quarkobject.p1client=myself
+			quarkobject.p2=self
+			quarkobject.p2client=myself
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
 		pdu=self.sizepad(peer.host[0])
@@ -1061,8 +1067,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				# try to clean our peer's client too
 				if quarkobject.p1==self:
 					mypeer = self.get_client_from_nick(quarkobject.p2.nick)
-				if quarkobject.p2==self:
+				elif quarkobject.p2==self:
 					mypeer = self.get_client_from_nick(quarkobject.p1.nick)
+				else:
+					mypeer = self
 
 				mypeer.side=0
 				mypeer.opponent=None
