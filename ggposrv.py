@@ -72,6 +72,16 @@ class GGPOChannel(object):
 		self.motd = motd
 		self.clients = set()
 
+class GGPOQuark(object):
+	"""
+	Object representing a GGPO quark: an ongoing match that can be spectated.
+	"""
+	def __init__(self, quark):
+		self.quark = quark
+		self.p1 = None
+		self.p2 = None
+		self.spectators = set()
+
 class GGPOClient(SocketServer.BaseRequestHandler):
 	"""
 	GGPO client connect and command handling. Client connection is handled by
@@ -254,8 +264,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				params = quark,block1,block2,gamebuf,sequence
 
 			if (command==0x12):
-				#    size           seq num             command           quarklen                quark                    buflen            buffer...
-				# [\x00\x00+f] [\x00\x00\x00\x07] [\x00\x00\x00\x12] [\x00\x00\x00\x1c] [challenge-3956-1413215783.82] [\x00\x00+6] [\x00\x05f4x\x01\xed\x9d\t`T\xd5\xd5\xc7\xef$\xb3\xa...]
 				command="gamebuffer"
 				quarklen=int(data[12:16].encode('hex'),16)
 				quark=data[16:16+quarklen]
@@ -346,36 +354,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				return client
 		return self
 
-	def get_p1_from_quark(self, quark):
-		"""
-		Returns a GGPOClient object representing Quark's P1, or self if not found
-		"""
-		for host in self.server.connections:
-			client = self.server.connections[host]
-			if client.fba==True and client.quark==quark and client.side==1:
-				return client
-		return self
-
-	def get_p2_from_quark(self, quark):
-		"""
-		Returns a GGPOClient object representing Quark's P1, or self if not found
-		"""
-		for host in self.server.connections:
-			client = self.server.connections[host]
-			if client.fba==True and client.quark==quark and client.side==2:
-				return client
-		return self
-
-	def get_client_from_quark(self, quark):
-		"""
-		Returns a GGPOClient object representing our FBA peer's client connection, or self if not found
-		"""
-		for nick in self.server.clients:
-			client = self.get_client_from_nick(nick)
-			if client.fba==False and client.quark==quark and client.host[0]!=self.host[0]:
-				return client
-		return self
-
 	def get_myclient_from_quark(self, quark):
 		"""
 		Returns a GGPOClient object representing our own client connection, or self if not found
@@ -445,31 +423,21 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_getnicks(self, params):
 		quark, sequence = params
 
-		client=self.get_client_from_quark(quark)
-		myself=self.get_myclient_from_quark(quark)
+		quarkobject = self.server.quarks[quark]
 
-		if (myself!=self):
-			self.nick=myself.nick
-			self.side=myself.side
+		i=0
+		while True:
+			if (quarkobject.p1 != None and quarkobject.p2 != None) or i>=30:
+				break
+			i=i+1
+			time.sleep(1)
 
 		pdu='\x00\x00\x00\x00'
-		if (client.side==1):
-			pdu+=self.sizepad(client.nick)
-			pdu+=self.sizepad(myself.nick)
-		elif (client.side==2):
-			pdu+=self.sizepad(myself.nick)
-			pdu+=self.sizepad(client.nick)
-		else:
-			# something went wrong
-			pdu+='\x00\x00\x00\x00'
-			pdu+='\x00\x00\x00\x00'
+		if (i<30):
+			pdu+=self.sizepad(quarkobject.p1.nick)
+			pdu+=self.sizepad(quarkobject.p2.nick)
 		pdu+='\x00\x00\x00\x00'
-		pdu+='\x00\x00\x00\x00' # TODO: this is the number of spectators
-		pdu+='\x00\x00\x00\x04'
-		pdu+='\xff\xff\xff\xf5'
-		pdu+='\x00\x00\x00\x08'
-		pdu+='\xff\xff\xff\xf6'
-		pdu+='\x00\x00\x00\x01'
+		pdu+=self.pad2hex(len(quarkobject.spectators))
 
 		response = self.reply(sequence,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -485,8 +453,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.quark=quark
 		self.fbaport=fbaport
 
+		quarkobject = self.server.quarks.setdefault(quark, GGPOQuark(quark))
+
 		i=0
 		while True:
+			i=i+1
 			peer=self.get_peer_from_quark(quark)
 			time.sleep(5)
 			if peer!=self or i>=10:
@@ -498,14 +469,21 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			logging.debug('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
 
 		myself=self.get_myclient_from_quark(quark)
+		self.side=myself.side
+		self.nick=myself.nick
+
+		if self.side==1 and quarkobject.p1==None:
+			quarkobject.p1=self
+		elif self.side==2 and quarkobject.p2==None:
+			quarkobject.p2=self
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
 		pdu=self.sizepad(peer.host[0])
-		pdu+=self.pad2hex(peer.fbaport)    # TODO: check if this should be our fbaport or peer's fbaport
-		if myself.side-1==1:
-			pdu+=self.pad2hex(0)
-		else:
+		pdu+=self.pad2hex(peer.fbaport)
+		if self.side==1:
 			pdu+=self.pad2hex(1)
+		else:
+			pdu+=self.pad2hex(0)
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -514,43 +492,45 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_spectator(self,params):
 		quark, sequence = params
 
+		quarkobject = self.server.quarks[quark]
+
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
 
 		self.fba=True
 		self.quark=quark
 
-		p1=self.get_p1_from_quark(quark)
-		p2=self.get_p2_from_quark(quark)
+		quarkobject.spectators.add(self)
 
 		negseq=4294967285 #'\xff\xff\xff\xf5'
 		pdu=''
 		response = self.reply(negseq,pdu)
 
 		negseq=4294967286 #'\xff\xff\xff\xf6'
-		pdu='\x00\x00\x00\x01'			 # TODO: this might be the number of espectators?
+		pdu=self.pad2hex(len(quarkobject.spectators))
 		response+=self.reply(negseq,pdu)
 
 		# this updates the number of spectators in both players FBAs
-		logging.debug('to %s: %r' % (p1.client_ident(), response))
-		p1.send_queue.append(response)
-		logging.debug('to %s: %r' % (p2.client_ident(), response))
-		p2.send_queue.append(response)
+		logging.debug('to %s: %r' % (quarkobject.p1.client_ident(), response))
+		quarkobject.p1.send_queue.append(response)
+		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
+		quarkobject.p2.send_queue.append(response)
 
 	def spectator_leave(self, quark):
 
-		p1=self.get_p1_from_quark(quark)
-		p2=self.get_p2_from_quark(quark)
+		quarkobject = self.server.quarks[quark]
+
+		quarkobject.spectators.remove(self)
 
 		negseq=4294967286 #'\xff\xff\xff\xf6'
-		pdu='\x00\x00\x00\x00'			 # TODO: this might be the number of espectators?
+		pdu=self.pad2hex(len(quarkobject.spectators))
 		response=self.reply(negseq,pdu)
 
 		# this updates the number of spectators in both players FBAs
-		logging.debug('to %s: %r' % (p1.client_ident(), response))
-		p1.send_queue.append(response)
-		logging.debug('to %s: %r' % (p2.client_ident(), response))
-		p2.send_queue.append(response)
+		logging.debug('to %s: %r' % (quarkobject.p1.client_ident(), response))
+		quarkobject.p1.send_queue.append(response)
+		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
+		quarkobject.p2.send_queue.append(response)
 
 	def handle_challenge(self, params):
 		# TODO: check that user is connected, in available state and in the same channel
@@ -776,7 +756,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (sequence >4):
 			self.send_ack(sequence)
 
-		if self.status == 2 and sequence!=0:
+		if self.status == 2 and sequence!=0 and self.opponent!=None:
 			self.previous_status = status
 		else:
 			self.status = status
@@ -1008,33 +988,43 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				if (client.opponent==self.nick):
 					client.opponent=None
 			self.channel.clients.remove(self)
+
+		# remove quark if we are a player that closes ggpofba
+		if self.quark!=None:
+			try:
+				if self.server.quarks[self.quark].p1==self or self.server.quarks[self.quark].p2==self:
+					self.server.quarks.pop(self.quark)
+			except KeyError:
+				pass
+
 		if self.nick in self.server.clients and self.fba==False:
 			self.server.clients.pop(self.nick)
+
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
 
-			# return the client to non-playing state when the emulator closes
-			myself=self.get_myclient_from_quark(self.quark)
+			if self.fba==True:
+				# return the client to non-playing state when the emulator closes
+				if (self.side==0 or self.side==3) and self.quark!=None:
+					# this client is an spectator
+					try:
+						self.spectator_leave(self.quark)
+					except KeyError:
+						pass
+				else:
+					# this client is a player
+					myself=self.get_myclient_from_quark(self.quark)
 
-			if (myself.side==0 or myself.side==3): # this client is an spectator
-				self.spectator_leave(self.quark)
-
-			myself.side=0
-			myself.opponent=None
-			myself.quark=None
-			if (myself.previous_status!=None):
-				myself.status=myself.previous_status
-			else:
-				myself.status=0
-			myself.previous_status=None
-			params = myself.status,0
-			myself.handle_status(params)
-
-			# return the FBA peer's client to non-playing state too
-			#client=self.get_client_from_quark(self.quark)
-			#client.side=0
-			#client.opponent=None
-			#client.quark=None
+					myself.side=0
+					myself.opponent=None
+					myself.quark=None
+					if (myself.previous_status!=None):
+						myself.status=myself.previous_status
+					else:
+						myself.status=0
+					myself.previous_status=None
+					params = myself.status,0
+					myself.handle_status(params)
 
 		logging.info('Connection finished: %s' % (self.client_ident()))
 
@@ -1097,6 +1087,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['xmvsf']=GGPOChannel("xmvsf", "xmvsf", "X-Men vs. Street Fighter")
 		self.clients = {}  # Connected authenticated clients (GGPOClient instances) by nickname
 		self.connections = {} # Connected unauthenticated clients (GGPOClient instances) by host
+		self.quarks = {} # quark games (GGPOQuark instances) by quark
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
 class Daemon:
@@ -1162,7 +1153,6 @@ if __name__ == "__main__":
 	(options, args) = parser.parse_args()
 
 	# Paths
-	configfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.ini')
 	logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
 
 	#
@@ -1204,7 +1194,6 @@ if __name__ == "__main__":
 			sys.exit(0)
 
 	logging.info("Starting ggposrv")
-	logging.debug("configfile = %s" % (configfile))
 	logging.debug("logfile = %s" % (logfile))
 
 	if options.log_stdout:
