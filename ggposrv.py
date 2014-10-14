@@ -79,7 +79,9 @@ class GGPOQuark(object):
 	def __init__(self, quark):
 		self.quark = quark
 		self.p1 = None
+		self.p1client = None
 		self.p2 = None
+		self.p2client = None
 		self.spectators = set()
 
 class GGPOClient(SocketServer.BaseRequestHandler):
@@ -93,6 +95,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.nick = None		# Client's currently registered nickname
 		self.host = client_address	# Client's hostname / ip.
 		self.status = 0			# Client's status (0=available, 1=away, 2=playing)
+		self.clienttype = None		# can be: player(fba), spectator(fba) or client
 		self.previous_status = None	# Client's previous status (0=available, 1=away, 2=playing)
 		self.opponent = None		# Client's opponent
 		self.quark = None		# Client's quark (in-game uri)
@@ -358,11 +361,25 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		Returns a GGPOClient object representing our own client connection, or self if not found
 		"""
+		try:
+			quarkobject = self.server.quarks[quark]
+
+			if quarkobject.p1client!=None and self.nick!=None:
+				if quarkobject.p1client.nick == self.nick:
+					return quarkobject.p1client
+
+			if quarkobject.p2client!=None and self.nick!=None:
+				if quarkobject.p2client.nick == self.nick:
+					return quarkobject.p2client
+		except KeyError:
+			pass
+
 		for nick in self.server.clients:
 			client = self.get_client_from_nick(nick)
 			if client.fba==False and client.quark==quark and client.host[0]==self.host[0]:
 				return client
 		return self
+
 
 	def handle_fba_privmsg(self, params):
 		"""
@@ -450,6 +467,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_ack(sequence)
 
 		self.fba=True
+		self.clienttype="player"
 		self.quark=quark
 		self.fbaport=fbaport
 
@@ -474,8 +492,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if self.side==1 and quarkobject.p1==None:
 			quarkobject.p1=self
+			quarkobject.p1client=myself
 		elif self.side==2 and quarkobject.p2==None:
 			quarkobject.p2=self
+			quarkobject.p2client=myself
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
 		pdu=self.sizepad(peer.host[0])
@@ -498,6 +518,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_ack(sequence)
 
 		self.fba=True
+		self.clienttype="spectator"
 		self.quark=quark
 
 		quarkobject.spectators.add(self)
@@ -712,6 +733,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.server.clients[nick] = self
 			self.port = port
 			self.password = password
+			self.clienttype="client"
 
 			# auth successful
 			self.send_ack(sequence)
@@ -1016,38 +1038,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.server.clients.pop(self.nick)
 			logging.info("[%s] removing myself from server clients" % (self.client_ident()))
 
-		# remove quark if we are a player that closes ggpofba
-		if self.quark!=None:
-			try:
-				quarkobject = self.server.quarks[self.quark]
-				if quarkobject.p1==self or quarkobject.p2==self:
-					quarkobject.p1.opponent=None
-					quarkobject.p2.opponent=None
-					logging.info("[%s] assigning %s opponent to None " % (self.client_ident(), quarkobject.p1.nick))
-					logging.info("[%s] assigning %s opponent to None " % (self.client_ident(), quarkobject.p2.nick))
-					# this will kill the emulators to avoid assertion failed errors with future players
-					# produces an ugly "guru meditation" error on the peer's FBA, but lets the player
-					# do another game without having to cross challenge
-					logging.info("[%s] killing both FBAs" % (self.client_ident()))
-					quarkobject.p1.send_queue.append('\xff\xff\x00\x00\xde\xad')
-					quarkobject.p2.send_queue.append('\xff\xff\x00\x00\xde\xad')
-					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
-					self.server.quarks.pop(self.quark)
-			except KeyError:
-				pass
+		if self.clienttype=="player":
 
-		# return the client to non-playing state when the emulator closes
-		if (self.side==0 or self.side==3) and self.quark!=None:
-			logging.info("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
-			# this client is an spectator
-			try:
-				self.spectator_leave(self.quark)
-			except KeyError:
-				pass
-		else:
-			# this client is a player
+			# return the client to non-playing state when the emulator closes
 			myself=self.get_myclient_from_quark(self.quark)
-			logging.info("[%s] trying to destroy: %s" % (self.client_ident(), myself.client_ident()))
+			logging.info("[%s] cleaning: %s" % (self.client_ident(), myself.client_ident()))
 
 			myself.side=0
 			myself.opponent=None
@@ -1059,6 +1054,48 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			myself.previous_status=None
 			params = myself.status,0
 			myself.handle_status(params)
+
+			try:
+				quarkobject = self.server.quarks[self.quark]
+
+				# try to clean our peer's client too
+				if quarkobject.p1==self:
+					mypeer = self.get_client_from_nick(quarkobject.p2.nick)
+				if quarkobject.p2==self:
+					mypeer = self.get_client_from_nick(quarkobject.p1.nick)
+
+				mypeer.side=0
+				mypeer.opponent=None
+				mypeer.quark=None
+				if (mypeer.previous_status!=None and mypeer.previous_status!=2):
+					mypeer.status=mypeer.previous_status
+				else:
+					mypeer.status=0
+				mypeer.previous_status=None
+				params = mypeer.status,0
+				mypeer.handle_status(params)
+
+				# remove quark if we are a player that closes ggpofba
+				if quarkobject.p1==self or quarkobject.p2==self:
+					# this will kill the emulators to avoid assertion failed errors with future players
+					# produces an ugly "guru meditation" error on the peer's FBA, but lets the player
+					# do another game without having to cross challenge
+					logging.info("[%s] killing both FBAs" % (self.client_ident()))
+					quarkobject.p1.send_queue.append('\xff\xff\x00\x00\xde\xad')
+					quarkobject.p2.send_queue.append('\xff\xff\x00\x00\xde\xad')
+					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
+					self.server.quarks.pop(self.quark)
+
+			except KeyError:
+				pass
+
+		if self.clienttype=="spectator":
+			logging.info("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
+			# this client is an spectator
+			try:
+				self.spectator_leave(self.quark)
+			except KeyError:
+				pass
 
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
