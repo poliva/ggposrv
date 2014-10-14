@@ -48,7 +48,7 @@ import struct
 import time
 import random
 
-ACK='\x00\x00\x00\x00'
+VERSION=0.1
 
 class GGPOError(Exception):
 	"""
@@ -65,7 +65,7 @@ class GGPOChannel(object):
 	"""
 	Object representing an GGPO channel.
 	"""
-	def __init__(self, name, rom, topic, motd='Welcome to the unofficial GGPO server.\nThis is still very beta, some things might not work as expected.\n\n'):
+	def __init__(self, name, rom, topic, motd='Welcome to the unofficial GGPO-NG server.\nThis is still very beta, some things might not work as expected.\nFeel free to report any issues to @pof\n\n'):
 		self.name = name
 		self.rom = rom
 		self.topic = topic
@@ -129,6 +129,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		return self.pad2hex(length) + self.pad2hex(sequence) + pdu
 
 	def send_ack(self, sequence):
+		ACK='\x00\x00\x00\x00'
 		response = self.reply(sequence,ACK)
 		logging.debug('ACK to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
@@ -972,22 +973,24 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def dynamic_motd(self, channel):
 		motd=''
 
-		if channel=="ssf2t":
-			motd+="Visit http://www.strevival.com\n\n"
+#		if channel=="ssf2t":
+#			motd+="Visit http://www.strevival.com\n\n"
+
+		motd+='-!- ggpo-ng server version '+str(VERSION)+'\n'
 
 		clients = len(self.server.clients)
 		if clients==1:
-			motd+='You are the first client on the server!\n'
+			motd+='-!- You are the first client on the server!\n'
 		else:
-			motd+='There are '+str(clients)+' clients connected to the server.\n'
+			motd+='-!- There are '+str(clients)+' clients connected to the server.\n'
 
 		quarks = len(self.server.quarks)
 		if quarks==0:
-			motd+='At the moment no one is playing :(\n'
+			motd+='-!- At the moment no one is playing :(\n'
 		elif quarks==1:
-			motd+='There is only one ongoing game.\n'
+			motd+='-!- There is only one ongoing game.\n'
 		elif quarks>1:
-			motd+='There are '+str(quarks)+' ongoing games.\n'
+			motd+='-!- There are '+str(quarks)+' ongoing games.\n'
 
 		return motd
 
@@ -1217,6 +1220,9 @@ class Daemon:
 				pass
 
 if __name__ == "__main__":
+	print "-!- ggpo-ng server version " + str(VERSION)
+	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
+
 	#
 	# Parameter parsing
 	#
@@ -1244,7 +1250,7 @@ if __name__ == "__main__":
 	if options.verbose:
 		loglevel = logging.DEBUG
 	else:
-		loglevel = logging.WARNING
+		loglevel = logging.INFO
 
 	log = logging.basicConfig(
 		level=loglevel,
