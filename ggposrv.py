@@ -684,7 +684,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		pdu+=self.sizepad(channel.name)
 		pdu+=self.sizepad(channel.topic)
-		pdu+=self.sizepad(channel.motd)
+		pdu+=self.sizepad(channel.motd+self.dynamic_motd(channel.name))
 
 		response = self.reply(sequence,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -940,6 +940,28 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if self in channel.clients:
 			channel.clients.remove(self)
+
+	def dynamic_motd(self, channel):
+		motd=''
+
+		if channel=="ssf2t":
+			motd+="Visit http://www.strevival.com\n\n"
+
+		clients = len(self.server.clients)
+		if clients==1:
+			motd+='You are the first client on the server!\n'
+		else:
+			motd+='There are '+str(clients)+' clients connected to the server.\n'
+
+		quarks = len(self.server.quarks)
+		if quarks==0:
+			motd+='At the moment no one is playing :(\n'
+		elif quarks==1:
+			motd+='There is only one ongoing game.\n'
+		elif quarks>1:
+			motd+='There are '+str(quarks)+' ongoing games.\n'
+
+		return motd
 
 	def handle_dump(self, params):
 		"""
