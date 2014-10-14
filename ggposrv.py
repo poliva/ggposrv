@@ -47,8 +47,15 @@ import re
 import struct
 import time
 import random
+try:
+	# http://dev.maxmind.com/geoip/geoip2/geolite2/
+	import geoip2.database
+	reader = geoip2.database.Reader('GeoLite2-City.mmdb')
+except:
+	pass
 
-VERSION=0.1
+VERSION=0.2
+
 
 class GGPOError(Exception):
 	"""
@@ -141,6 +148,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# if not found, return self
 		logging.debug('[%s] Could not find client: %s' % (self.client_ident(), nick))
 		return self
+
+	def geolocate(self, ip):
+		try:
+			response = reader.city(ip)
+			return str(response.country.iso_code), str(response.country.name), str(response.city.name)
+		except:
+			pass
+		return '', '', ''
 
 	def parse(self, data):
 
@@ -741,6 +756,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.port = port
 			self.password = password
 			self.clienttype="client"
+			self.cc, self.country, self.city = self.geolocate(self.host[0])
 
 			# auth successful
 			self.send_ack(sequence)
