@@ -114,6 +114,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.country = "null"		# Client's country
 		self.cc = "null"		# Client's country code
 		self.password = None		# Client's entered password
+		self.lastmsg = 0		# timestamp of the last chat message
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 
@@ -964,6 +965,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# send the ACK to the client
 		self.send_ack(sequence)
+
+		timestamp = int(time.time())
+		if (timestamp-self.lastmsg < 2):
+			nick="System"
+			msg="Please do not spam"
+			negseq=4294967294 #'\xff\xff\xff\xfe'
+			response = self.reply(negseq,self.sizepad(nick)+self.sizepad(msg))
+			logging.debug('to %s: %r' % (self.client_ident(), response))
+			self.send_queue.append(response)
+			return
+
+		self.lastmsg = timestamp
 
 		for client in channel.clients:
 			# Send message to all client in the channel
