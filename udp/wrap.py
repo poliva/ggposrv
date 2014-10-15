@@ -8,10 +8,12 @@
 # Koen Bollen <meneer koenbollen nl>
 # 2010 GPL
 #
+# modified to wrap GGPOFBA without portforwarding by Pau Oliva (@pof)
+# 2014 GPL
+#
 
 import sys
 import socket
-from select import select
 import struct
 
 def bytes2addr( bytes ):
@@ -23,38 +25,51 @@ def bytes2addr( bytes ):
     return host, port
 
 def main():
+
+    port = 7001
+    l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+    l_sockfd.bind( ("", port) )
+    print "listening on *:%d (udp)" % port
+
+    emudata, emuaddr = l_sockfd.recvfrom(0)
+    print "connection from %s:%d" % emuaddr
+
     try:
         master = (sys.argv[1], int(sys.argv[2]))
-        pool = sys.argv[3].strip()
+        quark = sys.argv[3].strip()
     except (IndexError, ValueError):
-        print >>sys.stderr, "usage: %s <host> <port> <pool>" % sys.argv[0]
+        print >>sys.stderr, "usage: %s <host> <port> <quark>" % sys.argv[0]
         sys.exit(65)
 
     sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-    sockfd.sendto( pool, master )
-    data, addr = sockfd.recvfrom( len(pool)+3 )
-    if data != "ok "+pool:
+    sockfd.sendto( quark, master )
+    data, addr = sockfd.recvfrom( len(quark)+3 )
+    if data != "ok "+quark:
         print >>sys.stderr, "unable to request!"
         sys.exit(1)
     sockfd.sendto( "ok", master )
-    print >>sys.stderr, "request sent, waiting for parkner in pool '%s'..." % pool
+    print >>sys.stderr, "request sent, waiting for partner in quark '%s'..." % quark
     data, addr = sockfd.recvfrom( 6 )
 
     target = bytes2addr(data)
     print >>sys.stderr, "connected to %s:%d" % target
 
     while True:
-        rfds,_,_ = select( [0, sockfd], [], [] )
-        if 0 in rfds:
-            data = sys.stdin.readline()
-            if not data:
-                break
-            sockfd.sendto( data, target )
-        elif sockfd in rfds:
-            data, addr = sockfd.recvfrom( 1024 )
-            sys.stdout.write( data )
+
+        emudata, emuaddr = l_sockfd.recvfrom(1024)
+        if data:
+            #print "* received [ %r ] from %s" % (emudata, emuaddr)
+            sockfd.sendto( emudata, target )
+            #print "* sent [ %r ] to %s" % (emudata, target)
+
+        peerdata, peeraddr = sockfd.recvfrom( 1024 )
+        if peerdata:
+            #print "* received [ %r ] from %s" % (peerdata, peeraddr)
+            l_sockfd.sendto( peerdata, emuaddr )
+            #print "* sent [ %r ] to %s" % (peerdata, emuaddr)
 
     sockfd.close()
+    l_sockfd.close()
 
 if __name__ == "__main__":
     main()

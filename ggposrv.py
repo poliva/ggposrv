@@ -522,11 +522,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			quarkobject.p2=self
 			quarkobject.p2client=myself
 
-		# TODO: see if we can do UDP hole punching here
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
 		pdu=self.sizepad(peer.host[0])
 		pdu+=self.pad2hex(peer.fbaport)
+		# we can do UDP hole punching here:
+		#pdu=self.sizepad(127.0.0.1)
+		#pdu+=self.pad2hex(7001)
 		if self.side==1:
 			pdu+=self.pad2hex(1)
 		else:
