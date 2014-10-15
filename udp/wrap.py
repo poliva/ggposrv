@@ -26,6 +26,13 @@ def bytes2addr( bytes ):
 
 def main():
 
+    try:
+        master = (sys.argv[1], int(sys.argv[2]))
+        quark = sys.argv[3].strip()
+    except (IndexError, ValueError):
+        print >>sys.stderr, "usage: %s <host> <port> <quark>" % sys.argv[0]
+        sys.exit(65)
+
     port = 7001
     l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
     l_sockfd.bind( ("", port) )
@@ -33,13 +40,6 @@ def main():
 
     emudata, emuaddr = l_sockfd.recvfrom(0)
     print "connection from %s:%d" % emuaddr
-
-    try:
-        master = (sys.argv[1], int(sys.argv[2]))
-        quark = sys.argv[3].strip()
-    except (IndexError, ValueError):
-        print >>sys.stderr, "usage: %s <host> <port> <quark>" % sys.argv[0]
-        sys.exit(65)
 
     sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
     sockfd.sendto( quark, master )
