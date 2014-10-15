@@ -524,11 +524,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		pdu=self.sizepad(peer.host[0])
-		pdu+=self.pad2hex(peer.fbaport)
 		# we can do UDP hole punching here:
-		#pdu=self.sizepad(127.0.0.1)
-		#pdu+=self.pad2hex(7001)
+		if (holepunch):
+			# NOTE: when upd hole punching is enabled clients
+			# must use the wrapper, and we need to startt the
+			# rendezvous server
+			pdu=self.sizepad("127.0.0.1")
+			pdu+=self.pad2hex(7001)
+		else:
+			pdu=self.sizepad(peer.host[0])
+			pdu+=self.pad2hex(peer.fbaport)
 		if self.side==1:
 			pdu+=self.pad2hex(1)
 		else:
@@ -1283,6 +1288,9 @@ class Daemon:
 				pass
 
 if __name__ == "__main__":
+
+	global holepunch
+
 	print "-!- ggpo-ng server version " + str(VERSION)
 	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
 
@@ -1301,8 +1309,11 @@ if __name__ == "__main__":
 	parser.add_option("-l", "--log-stdout", dest="log_stdout", action="store_true", default=False, help="Also log to stdout")
 	parser.add_option("-e", "--errors", dest="errors", action="store_true", default=False, help="Do not intercept errors.")
 	parser.add_option("-f", "--foreground", dest="foreground", action="store_true", default=False, help="Do not go into daemon mode.")
+	parser.add_option("-u", "--udpholepunch", dest="udpholepunch", action="store_true", default=False, help="Use UDP hole punching.")
 
 	(options, args) = parser.parse_args()
+
+	holepunch=options.udpholepunch
 
 	# Paths
 	logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
@@ -1325,6 +1336,7 @@ if __name__ == "__main__":
 	# Handle start/stop/restart commands.
 	#
 	if options.stop or options.restart:
+		logging.info("Stopping ggposrv")
 		pid = None
 		try:
 			f = file('ggposrv.pid', 'r')
