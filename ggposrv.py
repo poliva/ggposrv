@@ -586,7 +586,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client = self.get_client_from_nick(nick)
 
 		# check that user is connected, in available state and in the same channel
-		if (client.status==0 and client.channel==self.channel and self.channel==channel):
+		if (client.status==0 and client.channel==self.channel and self.channel.name==channel):
 
 			# send ACK to the initiator of the challenge request
 			self.send_ack(sequence)
@@ -819,14 +819,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (sequence >4):
 			self.send_ack(sequence)
 
-		if self.status == 2 and sequence!=0 and (status>0 and status<2) and self.opponent!=None:
+		if self.status == 2 and sequence!=0 and (status>=0 and status<2) and self.opponent!=None:
 			# set previous_status when status is modified while playing
 			self.previous_status = status
 			return
-		elif (status>0 and status<2) or (status==2 and sequence==0):
+		elif (status>=0 and status<2) or (status==2 and sequence==0):
 			self.status = status
 		else:
 			# do nothing if the user tries to set an invalid status
+			logging.debug('[%s]: trying to set invalid status: %d , self.status=%d, sequence=%d, self.opponent=%s' % (self.client_ident(), status, self.status, sequence, self.opponent))
 			return
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
