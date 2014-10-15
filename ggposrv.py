@@ -344,22 +344,28 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			while self.send_queue:
 				msg = self.send_queue.pop(0)
 				#logging.debug('to %s: %r' % (self.client_ident(), msg))
-				self.request.send(msg)
+				try:
+					self.request.send(msg)
+				except:
+					self.finish()
 
 			# See if the client has any commands for us.
 			if len(ready_to_read) == 1 and ready_to_read[0] == self.request:
-				data+= self.request.recv(1024)
+				try:
+					data+= self.request.recv(1024)
 
-				if not data:
-					break
-				elif len(data) >= int(data[0:4].encode('hex'),16):
-					response = self.parse(data)
-					data=''
+					if not data:
+						break
+					elif len(data) >= int(data[0:4].encode('hex'),16):
+						response = self.parse(data)
+						data=''
 
-					if response:
-						logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
-						self.request.send(response)
+						if response:
+							logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
+							self.request.send(response)
 
+				except:
+					self.finish()
 
 		self.request.close()
 
@@ -707,11 +713,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client.send_queue.append(response)
 
 	def handle_unknown(self, params):
-		# TODO: verify if the real server replies like this
 		sequence = params
 		response = self.reply(sequence,'\x00\x00\x00\x08')
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
+		# kick the user out of the server
+		self.finish()
 
 	def handle_connect(self, params):
 		sequence = params
@@ -801,10 +808,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (sequence >4):
 			self.send_ack(sequence)
 
-		if self.status == 2 and sequence!=0 and self.opponent!=None:
+		if self.status == 2 and sequence!=0 and (status>0 and status<2) and self.opponent!=None:
+			# set previous_status when status is modified while playing
 			self.previous_status = status
-		else:
+			return
+		elif (status>0 and status<2) or (status==2 and sequence==0):
 			self.status = status
+		else:
+			# do nothing if the user tries to set an invalid status
+			return
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
 		pdu='\x00\x00\x00\x01'
@@ -1130,6 +1142,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			logging.info("[%s] removing myself from server connections" % (self.client_ident()))
 
 		logging.info('Connection finished: %s' % (self.client_ident()))
+		self.request.close()
 
 	def __repr__(self):
 		"""
