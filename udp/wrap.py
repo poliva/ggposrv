@@ -14,6 +14,7 @@
 
 import sys
 import socket
+from select import select
 import struct
 
 def bytes2addr( bytes ):
@@ -54,19 +55,24 @@ def main():
     target = bytes2addr(data)
     print >>sys.stderr, "connected to %s:%d" % target
 
+    l_sockfd.setblocking(0)
+    sockfd.setblocking(0)
+
     while True:
 
-        emudata, emuaddr = l_sockfd.recvfrom(1024)
-        if data:
-            #print "* received [ %r ] from %s" % (emudata, emuaddr)
-            sockfd.sendto( emudata, target )
-            #print "* sent [ %r ] to %s" % (emudata, target)
-
-        peerdata, peeraddr = sockfd.recvfrom( 1024 )
-        if peerdata:
-            #print "* received [ %r ] from %s" % (peerdata, peeraddr)
-            l_sockfd.sendto( peerdata, emuaddr )
-            #print "* sent [ %r ] to %s" % (peerdata, emuaddr)
+        rfds,_,_ = select( [sockfd,l_sockfd], [], [], 0.1)
+        if l_sockfd in rfds:
+            emudata, emuaddr = l_sockfd.recvfrom(16384)
+            if emudata:
+                #print "* received [ %r ] from %s" % (emudata, emuaddr)
+                sockfd.sendto( emudata, target )
+                #print "* sent [ %r ] to %s" % (emudata, target)
+        if sockfd in rfds:
+            peerdata, peeraddr = sockfd.recvfrom(16384)
+            if peerdata:
+                #print "* received [ %r ] from %s" % (peerdata, peeraddr)
+                l_sockfd.sendto( peerdata, emuaddr )
+                #print "* sent [ %r ] to %s" % (peerdata, emuaddr)
 
     sockfd.close()
     l_sockfd.close()
