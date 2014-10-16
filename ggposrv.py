@@ -118,6 +118,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.lastmsg = 0		# timestamp of the last chat message
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
+		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
 
 		SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
 
@@ -610,18 +611,29 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			logging.debug('to %s: %r' % (client.client_ident(), response))
 			client.send_queue.append(response)
+
+			# add the client to the challenging list
+			self.challenging[client.host] = client
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0a')
-			logging.debug('challenge NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('challenge NO_ACK to %s: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 
 	def handle_accept(self, params):
 		nick, channel, sequence = params
 
-		# TODO: make sure that nick has challenged the user that is doing the accept command
-
+		# make sure that nick has challenged the user that is doing the accept command
 		client = self.get_client_from_nick(nick)
+
+		if self.host not in client.challenging:
+			# send the NOACK to the client
+			response = self.reply(sequence,'\x00\x00\x00\x0c')
+			logging.info('accept NO_ACK to %s: %r' % (self.client_ident(), response))
+			self.send_queue.append(response)
+			return
+		else:
+			client.challenging.pop(self.host)
 
 		#logging.debug('[%s] looking for nick: %s found %s' % (self.client_ident(), nick, client.nick))
 
@@ -673,6 +685,17 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_decline(self, params):
 		nick, sequence = params
 
+		client = self.get_client_from_nick(nick)
+
+		if self.host not in client.challenging:
+			# send the NOACK to the client
+			response = self.reply(sequence,'\x00\x00\x00\x0d')
+			logging.info('decline NO_ACK to %s: %r' % (self.client_ident(), response))
+			self.send_queue.append(response)
+			return
+		else:
+			client.challenging.pop(self.host)
+
 		# send ACK to the initiator of the decline request
 		self.send_ack(sequence)
 
@@ -683,7 +706,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		response = self.reply(negseq,pdu)
 
-		client = self.get_client_from_nick(nick)
 		logging.debug('to %s: %r' % (client.client_ident(), response))
 		client.send_queue.append(response)
 
@@ -712,11 +734,22 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0b')
-			logging.debug('watch NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('watch NO_ACK to %s: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 
 	def handle_cancel(self, params):
 		nick, sequence = params
+
+		client = self.get_client_from_nick(nick)
+
+		if client.host not in self.challenging:
+			# send the NOACK to the client
+			response = self.reply(sequence,'\x00\x00\x00\x0e')
+			logging.info('cancel NO_ACK to %s: %r' % (self.client_ident(), response))
+			self.send_queue.append(response)
+			return
+		else:
+			self.challenging.pop(client.host)
 
 		# send ACK to the challenger user who wants to cancel the challenge
 		self.send_ack(sequence)
@@ -931,7 +964,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if not channel_name in self.server.channels or self.nick==None:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x08')
-			logging.debug('JOIN NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('JOIN NO_ACK to %s: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return()
 
