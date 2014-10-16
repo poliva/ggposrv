@@ -281,7 +281,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				block2=data[20+quarklen:24+quarklen]
 				#buflen=int(data[24+quarklen:24+quarklen+4].encode('hex'),16)
 				#gamebuf=data[28+quarklen:28+quarklen+buflen]
-				gamebuf=data[24+quarklen:]
+				gamebuf=data[24+quarklen:length+4]
 				params = quark,block1,block2,gamebuf,sequence
 
 			if (command==0x12):
@@ -290,7 +290,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				quark=data[16:16+quarklen]
 				#buflen=int(data[16+quarklen:16+quarklen+4].encode('hex'),16)
 				#gamebuf=data[20+quarklen:20+quarklen+buflen]
-				gamebuf=data[20+quarklen:]
+				gamebuf=data[20+quarklen:length+4]
 				params = quark,gamebuf,sequence
 
 			if (command==0x14):
@@ -354,7 +354,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# See if the client has any commands for us.
 			if len(ready_to_read) == 1 and ready_to_read[0] == self.request:
 				try:
-					data+= self.request.recv(1024)
+					data+= self.request.recv(4096)
 
 					if not data:
 						break
