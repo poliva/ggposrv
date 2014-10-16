@@ -55,7 +55,7 @@ try:
 except:
 	pass
 
-VERSION=0.2
+VERSION=0.3
 
 
 class GGPOError(Exception):
@@ -525,11 +525,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		# we can do UDP hole punching here:
 		if (holepunch):
-			# NOTE: when upd hole punching is enabled clients
-			# must use the wrapper, and we need to startt the
-			# rendezvous server
+			# when UDP hole punching is enabled clients must use the udp proxy wrapper
 			pdu=self.sizepad("127.0.0.1")
 			pdu+=self.pad2hex(7001)
 		else:
