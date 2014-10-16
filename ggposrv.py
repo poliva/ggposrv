@@ -47,6 +47,7 @@ import re
 import struct
 import time
 import random
+from threading import Thread
 try:
 	# http://dev.maxmind.com/geoip/geoip2/geolite2/
 	import geoip2.database
@@ -1244,6 +1245,57 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.quarks = {} # quark games (GGPOQuark instances) by quark
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
+class RendezvousUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
+	def __init__(self, server_address, MyUDPHandler):
+		self.quarkqueue = {}
+		SocketServer.UDPServer.__init__(self, server_address, MyUDPHandler)
+
+class MyUDPHandler(SocketServer.BaseRequestHandler):
+	"""
+	This class works similar to the TCP handler class, except that
+	self.request consists of a pair of data and client socket, and since
+	there is no connection the client address must be given explicitly
+	when sending data back via sendto().
+	"""
+
+	def __init__(self, request, client_address, server):
+		self.quark=''
+		SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
+
+	def addr2bytes(self, addr ):
+		"""Convert an address pair to a hash."""
+		host, port = addr
+		try:
+			host = socket.gethostbyname( host )
+		except (socket.gaierror, socket.error):
+			raise ValueError, "invalid host"
+		try:
+			port = int(port)
+		except ValueError:
+			raise ValueError, "invalid port"
+		bytes  = socket.inet_aton( host )
+		bytes += struct.pack( "H", port )
+		return bytes
+
+	def handle(self):
+		data = self.request[0].strip()
+		sockfd = self.request[1]
+
+		if data != "ok":
+			self.quark = data
+			sockfd.sendto( "ok "+self.quark, self.client_address )
+			logging.info("[%s:%d] HOLEPUNCH request received for quark: %s" % (self.client_address[0], self.client_address[1], self.quark))
+
+		try:
+			a, b = self.server.quarkqueue[self.quark], self.client_address
+			sockfd.sendto( self.addr2bytes(a), b )
+			sockfd.sendto( self.addr2bytes(b), a )
+			logging.info("HOLEPUNCH linked: %s" % self.quark)
+			del self.server.quarkqueue[self.quark]
+		except KeyError:
+			if self.quark!='':
+				self.server.quarkqueue[self.quark] = self.client_address
+
 class Daemon:
 	"""
 	Daemonize the current process (detach it from the console).
@@ -1380,8 +1432,16 @@ if __name__ == "__main__":
 	# Start server
 	#
 	try:
+
+		if holepunch:
+			punchserver = RendezvousUDPServer((options.listen_address, int(options.listen_port)), MyUDPHandler)
+			logging.info('Starting holepunch on %s:%s/udp' % (options.listen_address, options.listen_port))
+			t = Thread(target=punchserver.serve_forever)
+			t.daemon = True
+			t.start()
+
 		ggposerver = GGPOServer((options.listen_address, int(options.listen_port)), GGPOClient)
-		logging.info('Starting ggposrv on %s:%s' % (options.listen_address, options.listen_port))
+		logging.info('Starting ggposrv on %s:%s/tcp' % (options.listen_address, options.listen_port))
 		ggposerver.serve_forever()
 	except socket.error, e:
 		logging.error(repr(e))
