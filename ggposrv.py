@@ -340,7 +340,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		data=''
 		while True:
-			ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
+			try:
+				ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
+			except:
+				break
 
 			# Write any commands to the client
 			while self.send_queue:
