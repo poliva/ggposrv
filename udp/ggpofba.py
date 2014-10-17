@@ -19,7 +19,6 @@ import socket
 from select import select
 from subprocess import Popen, PIPE
 import struct
-import platform
 
 if os.name=='posix':
 	import errno
@@ -82,17 +81,27 @@ def bytes2addr( bytes ):
 def start_fba(quark):
 
 	FBA="ggpofba-ng.exe"
-	OS=platform.system()
-	if OS=="Darwin":
-		wine="/Applications/Wine.app/Contents/Resources/bin/wine"
-	elif OS=="Linux":
-		wine="wine"
+
+	if not os.path.isfile(FBA):
+		print >>sys.stderr, "Can't find", FBA
+		sys.exit(1)
+
+	# try to find wine
+	wine="/Applications/Wine.app/Contents/Resources/bin/wine"
+	if not os.path.isfile(wine):
+		wine="/usr/bin/wine"
+	if not os.path.isfile(wine):
+		wine='/usr/local/bin/wine'
+	if not os.path.isfile(wine):
+		# assume we are on windows
+		args=[FBA, quark]
 	else:
-		wine=''
+		args=[wine, FBA, quark]
+
 	try:
-		p = Popen([wine, FBA, quark])
+		p = Popen(args)
 	except OSError:
-		print >>sys.stderr, "Can't execute ggpofba-ng.exe"
+		print >>sys.stderr, "Can't execute", FBA
 		sys.exit(1)
 	return p
 
@@ -113,6 +122,9 @@ def main():
 		#print "listening on *:%d (udp)" % port
 
 		p=start_fba(quark)
+
+		#use only the challenge id for the hole punching server
+		quark = quark.split(",")[2]
 
 		emudata, emuaddr = l_sockfd.recvfrom(0)
 		#print "connection from %s:%d" % emuaddr
