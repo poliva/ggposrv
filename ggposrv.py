@@ -1161,9 +1161,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				quarkobject = self.server.quarks[self.quark]
 
 				# try to clean our peer's client too
-				if quarkobject.p1==self:
+				if quarkobject.p1==self and quarkobject.p2!=None:
 					mypeer = self.get_client_from_nick(quarkobject.p2.nick)
-				elif quarkobject.p2==self:
+				elif quarkobject.p2==self and quarkobject.p1!=None:
 					mypeer = self.get_client_from_nick(quarkobject.p1.nick)
 				else:
 					mypeer = self
