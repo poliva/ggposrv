@@ -73,9 +73,6 @@ def udp_proxy(quark,q):
 	#use only the challenge id for the hole punching server
 	quark = quark.split(",")[2]
 
-	emudata, emuaddr = l_sockfd.recvfrom(1024)
-	#print "connection from %s:%d" % emuaddr
-
 	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	sockfd.sendto( quark, master )
 	data, addr = sockfd.recvfrom( len(quark)+3 )
@@ -91,6 +88,16 @@ def udp_proxy(quark,q):
 	#print >>sys.stderr, "connected to %s:%d" % target
 	print >>sys.stderr, "connected to target"
 
+	# first request using blocking sockets:
+	emudata, emuaddr = l_sockfd.recvfrom(16384)
+	if emudata:
+		sockfd.sendto( emudata, target )
+
+	peerdata, peeraddr = sockfd.recvfrom(16384)
+	if peerdata:
+		l_sockfd.sendto( peerdata, emuaddr )
+
+	# now continue the game using nonblocking:
 	l_sockfd.setblocking(0)
 	sockfd.setblocking(0)
 
