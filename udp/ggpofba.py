@@ -23,55 +23,6 @@ import threading
 import Queue
 import time
 
-if os.name=='posix':
-	import errno
-else:
-	import ctypes
-
-# http://stackoverflow.com/a/23409343/1576221
-def pid_exists(pid):
-	"""Check whether pid exists in the current process table."""
-	if os.name == 'posix':
-		if pid < 0:
-			return False
-		try:
-			os.kill(pid, 0)
-		except OSError as e:
-			return e.errno == errno.EPERM
-		else:
-			return True
-	else:
-		kernel32 = ctypes.windll.kernel32
-		HANDLE = ctypes.c_void_p
-		DWORD = ctypes.c_ulong
-		LPDWORD = ctypes.POINTER(DWORD)
-		class ExitCodeProcess(ctypes.Structure):
-			_fields_ = [ ('hProcess', HANDLE),
-				('lpExitCode', LPDWORD)]
-
-		SYNCHRONIZE = 0x100000
-		process = kernel32.OpenProcess(SYNCHRONIZE, 0, pid)
-		if not process:
-			return False
-
-		ec = ExitCodeProcess()
-		out = kernel32.GetExitCodeProcess(process, ctypes.byref(ec))
-		if not out:
-			err = kernel32.GetLastError()
-			if kernel32.GetLastError() == 5:
-				# Access is denied.
-				logging.warning("Access is denied to get pid info.")
-			kernel32.CloseHandle(process)
-			return False
-		elif bool(ec.lpExitCode):
-			# print ec.lpExitCode.contents
-			# There is an exist code, it quit
-			kernel32.CloseHandle(process)
-			return False
-		# No exit code, it's running.
-		kernel32.CloseHandle(process)
-		return True
-
 def bytes2addr( bytes ):
 	"""Convert a hash to an address pair."""
 	if len(bytes) != 6:
@@ -122,7 +73,7 @@ def udp_proxy(quark,q):
 	#use only the challenge id for the hole punching server
 	quark = quark.split(",")[2]
 
-	emudata, emuaddr = l_sockfd.recvfrom(0)
+	emudata, emuaddr = l_sockfd.recvfrom(1024)
 	#print "connection from %s:%d" % emuaddr
 
 	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
@@ -132,11 +83,13 @@ def udp_proxy(quark,q):
 		print >>sys.stderr, "unable to request!"
 		os._exit(1)
 	sockfd.sendto( "ok", master )
-	print >>sys.stderr, "request sent, waiting for partner in quark '%s'..." % quark
+	#print >>sys.stderr, "request sent, waiting for partner in quark '%s'..." % quark
+	print >>sys.stderr, "request sent, waiting for partner in quark..."
 	data, addr = sockfd.recvfrom( 6 )
 
 	target = bytes2addr(data)
 	#print >>sys.stderr, "connected to %s:%d" % target
+	print >>sys.stderr, "connected to target"
 
 	l_sockfd.setblocking(0)
 	sockfd.setblocking(0)
@@ -166,9 +119,8 @@ def process_checker(q):
 	while True:
 		time.sleep(5)
 		fba_status=fba_p.poll()
-		fba_exists=pid_exists(fba_p.pid)
-		#print "FBA STATUS: " + str(fba_status) + "FBA_EXISTS: " + str(fba_exists)
-		if (not fba_exists) or (fba_status!=None):
+		#print "FBA STATUS:", str(fba_status)
+		if fba_status!=None:
 			print >>sys.stderr, "killing process"
 			os._exit(0)
 
