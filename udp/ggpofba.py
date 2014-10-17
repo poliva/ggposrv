@@ -19,6 +19,9 @@ import socket
 from select import select
 from subprocess import Popen, PIPE
 import struct
+import threading
+import Queue
+import time
 
 if os.name=='posix':
 	import errno
@@ -84,7 +87,7 @@ def start_fba(quark):
 
 	if not os.path.isfile(FBA):
 		print >>sys.stderr, "Can't find", FBA
-		sys.exit(1)
+		os._exit(1)
 
 	# try to find wine
 	wine="/Applications/Wine.app/Contents/Resources/bin/wine"
@@ -102,11 +105,74 @@ def start_fba(quark):
 		p = Popen(args)
 	except OSError:
 		print >>sys.stderr, "Can't execute", FBA
-		sys.exit(1)
+		os._exit(1)
 	return p
 
-def main():
+def udp_proxy(quark,q):
+
 	master = ("g.x90.es", 7000)
+	port = 7001
+	l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+	l_sockfd.bind( ("127.0.0.1", port) )
+	#print "listening on 127.0.0.1:%d (udp)" % port
+
+	fba_pid=start_fba(quark)
+	q.put(fba_pid)
+
+	#use only the challenge id for the hole punching server
+	quark = quark.split(",")[2]
+
+	emudata, emuaddr = l_sockfd.recvfrom(0)
+	#print "connection from %s:%d" % emuaddr
+
+	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+	sockfd.sendto( quark, master )
+	data, addr = sockfd.recvfrom( len(quark)+3 )
+	if data != "ok "+quark:
+		print >>sys.stderr, "unable to request!"
+		os._exit(1)
+	sockfd.sendto( "ok", master )
+	print >>sys.stderr, "request sent, waiting for partner in quark '%s'..." % quark
+	data, addr = sockfd.recvfrom( 6 )
+
+	target = bytes2addr(data)
+	#print >>sys.stderr, "connected to %s:%d" % target
+
+	l_sockfd.setblocking(0)
+	sockfd.setblocking(0)
+
+	while True:
+
+		rfds,_,_ = select( [sockfd,l_sockfd], [], [], 0.1)
+		if l_sockfd in rfds:
+			emudata, emuaddr = l_sockfd.recvfrom(16384)
+			if emudata:
+				sockfd.sendto( emudata, target )
+		if sockfd in rfds:
+			peerdata, peeraddr = sockfd.recvfrom(16384)
+			if peerdata:
+				l_sockfd.sendto( peerdata, emuaddr )
+
+	sockfd.close()
+	l_sockfd.close()
+	os._exit(0)
+
+def process_checker(q):
+
+	time.sleep(15)
+	fba_p=q.get()
+	print >>sys.stderr, "FBA pid:", int(fba_p.pid)
+
+	while True:
+		time.sleep(5)
+		fba_status=fba_p.poll()
+		fba_exists=pid_exists(fba_p.pid)
+		#print "FBA STATUS: " + str(fba_status) + "FBA_EXISTS: " + str(fba_exists)
+		if (not fba_exists) or (fba_status!=None):
+			print >>sys.stderr, "killing process"
+			os._exit(0)
+
+def main():
 
 	quark=''
 	try:
@@ -115,52 +181,12 @@ def main():
 		pass
 
 	if quark.startswith('quark:served'):
-
-		port = 7001
-		l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-		l_sockfd.bind( ("", port) )
-		#print "listening on *:%d (udp)" % port
-
-		p=start_fba(quark)
-
-		#use only the challenge id for the hole punching server
-		quark = quark.split(",")[2]
-
-		emudata, emuaddr = l_sockfd.recvfrom(0)
-		#print "connection from %s:%d" % emuaddr
-
-		sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-		sockfd.sendto( quark, master )
-		data, addr = sockfd.recvfrom( len(quark)+3 )
-		if data != "ok "+quark:
-			print >>sys.stderr, "unable to request!"
-			sys.exit(1)
-		sockfd.sendto( "ok", master )
-		print >>sys.stderr, "request sent, waiting for partner in quark '%s'..." % quark
-		data, addr = sockfd.recvfrom( 6 )
-
-		target = bytes2addr(data)
-		#print >>sys.stderr, "connected to %s:%d" % target
-
-		l_sockfd.setblocking(0)
-		sockfd.setblocking(0)
-
-		while pid_exists(p.pid):
-
-			rfds,_,_ = select( [sockfd,l_sockfd], [], [], 0.1)
-			if l_sockfd in rfds:
-				emudata, emuaddr = l_sockfd.recvfrom(16384)
-				if emudata:
-					sockfd.sendto( emudata, target )
-			if sockfd in rfds:
-				peerdata, peeraddr = sockfd.recvfrom(16384)
-				if peerdata:
-					l_sockfd.sendto( peerdata, emuaddr )
-
-		sockfd.close()
-		l_sockfd.close()
-		sys.exit(0)
-
+		q = Queue.Queue()
+		t = threading.Thread(target=process_checker, args=(q,))
+		t.setDaemon(True)
+		t.start()
+		udp_proxy(quark,q)
+		t.join()
 	else:
 		start_fba(quark)
 
