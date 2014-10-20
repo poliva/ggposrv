@@ -647,10 +647,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.status=2
 		client.status=2
 
-		params = 2,0
-		client.handle_status(params)
-		self.handle_status(params)
-
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
 		random2=random.randint(10,99)
@@ -681,6 +677,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (client.client_ident(), response))
 		client.send_queue.append(response)
+
+		# announce the match to the public at the end
+		# TODO: may be better to announce this after the two peers have been connected?
+		params = 2,0
+		client.handle_status(params)
+		self.handle_status(params)
 
 	def handle_decline(self, params):
 		nick, sequence = params
