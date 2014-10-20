@@ -37,7 +37,9 @@ def start_fba(quark):
 	FBA="ggpofba-ng.exe"
 
 	# try to guess install directory:
-	dirtest = os.path.dirname(os.path.abspath(__file__))
+	dirtest = os.path.abspath(os.path.dirname(sys.argv[0]))
+	if not os.path.isfile(os.path.join(dirtest,FBA)):
+		dirtest = os.path.dirname(os.path.abspath(__file__))
 	if not os.path.isfile(os.path.join(dirtest,FBA)):
 		dirtest = os.getcwd()
 	if not os.path.isfile(os.path.join(dirtest,FBA)):
