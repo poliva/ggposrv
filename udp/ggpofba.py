@@ -36,9 +36,16 @@ def start_fba(quark):
 
 	FBA="ggpofba-ng.exe"
 
-	if not os.path.isfile(FBA):
+	# try to guess install directory:
+	dirtest = os.path.dirname(os.path.abspath(__file__))
+	if not os.path.isfile(os.path.join(dirtest,FBA)):
+		dirtest = os.getcwd()
+	if not os.path.isfile(os.path.join(dirtest,FBA)):
 		print >>sys.stderr, "Can't find", FBA
 		os._exit(1)
+
+	FBA=os.path.join(dirtest,FBA)
+	#print "FOUND FBA:", FBA
 
 	# try to find wine
 	wine="/Applications/Wine.app/Contents/Resources/bin/wine"
@@ -61,7 +68,7 @@ def start_fba(quark):
 
 def udp_proxy(quark,q):
 
-	master = ("g.x90.es", 7000)
+	master = ("ggpo-ng.com", 7000)
 	port = 7001
 	l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	l_sockfd.bind( ("127.0.0.1", port) )
