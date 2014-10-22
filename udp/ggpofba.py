@@ -77,11 +77,11 @@ def udp_proxy(args,q):
 	l_sockfd.bind( ("127.0.0.1", port) )
 	#print "listening on 127.0.0.1:%d (udp)" % port
 
-	fba_pid=start_fba(args)
-	q.put(fba_pid)
-
 	#use only the challenge id for the hole punching server
 	quark = args[0].split(",")[2]
+
+	fba_pid=start_fba(args)
+	q.put(fba_pid)
 
 	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	sockfd.sendto( quark, master )
@@ -143,10 +143,13 @@ def process_checker(q):
 
 def main():
 
-	args = sys.argv
-	del args[0]
+	args = sys.argv[1:]
 
-	if args[0].startswith('quark:served'):
+	quark=''
+	if len(args)>0:
+		quark=args[0]
+
+	if quark.startswith('quark:served'):
 		q = Queue.Queue()
 		t = threading.Thread(target=process_checker, args=(q,))
 		t.setDaemon(True)
