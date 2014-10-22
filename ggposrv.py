@@ -514,6 +514,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.side=myself.side
 		self.nick=myself.nick
 
+		# announce the match to the public
+		params = 2,0
+		myself.handle_status(params)
+
 		if self.side==1 and quarkobject.p1==None:
 			quarkobject.p1=self
 			quarkobject.p1client=myself
@@ -677,12 +681,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (client.client_ident(), response))
 		client.send_queue.append(response)
-
-		# announce the match to the public at the end
-		# TODO: may be better to announce this after the two peers have been connected?
-		params = 2,0
-		client.handle_status(params)
-		self.handle_status(params)
 
 	def handle_decline(self, params):
 		nick, sequence = params
