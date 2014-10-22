@@ -32,7 +32,7 @@ def bytes2addr( bytes ):
 	return host, port
 
 
-def start_fba(quark):
+def start_fba(args):
 
 	FBA="ggpofba-ng.exe"
 
@@ -57,9 +57,10 @@ def start_fba(quark):
 		wine='/usr/local/bin/wine'
 	if not os.path.isfile(wine):
 		# assume we are on windows
-		args=[FBA, quark]
+		args.insert(0, FBA)
 	else:
-		args=[wine, FBA, quark]
+		args.insert(0, FBA)
+		args.insert(0, wine)
 
 	try:
 		p = Popen(args)
@@ -68,7 +69,7 @@ def start_fba(quark):
 		os._exit(1)
 	return p
 
-def udp_proxy(quark,q):
+def udp_proxy(args,q):
 
 	master = ("ggpo-ng.com", 7000)
 	port = 7001
@@ -76,11 +77,11 @@ def udp_proxy(quark,q):
 	l_sockfd.bind( ("127.0.0.1", port) )
 	#print "listening on 127.0.0.1:%d (udp)" % port
 
-	fba_pid=start_fba(quark)
+	fba_pid=start_fba(args)
 	q.put(fba_pid)
 
 	#use only the challenge id for the hole punching server
-	quark = quark.split(",")[2]
+	quark = args[0].split(",")[2]
 
 	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	sockfd.sendto( quark, master )
@@ -142,21 +143,18 @@ def process_checker(q):
 
 def main():
 
-	quark=''
-	try:
-		quark = sys.argv[1].strip()
-	except (IndexError, ValueError):
-		pass
+	args = sys.argv
+	del args[0]
 
-	if quark.startswith('quark:served'):
+	if args[0].startswith('quark:served'):
 		q = Queue.Queue()
 		t = threading.Thread(target=process_checker, args=(q,))
 		t.setDaemon(True)
 		t.start()
-		udp_proxy(quark,q)
+		udp_proxy(args,q)
 		t.join()
 	else:
-		start_fba(quark)
+		start_fba(args)
 
 if __name__ == "__main__":
 	main()
