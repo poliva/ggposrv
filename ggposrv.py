@@ -47,6 +47,9 @@ import re
 import struct
 import time
 import random
+import hmac
+import hashlib
+import sqlite3
 from threading import Thread
 try:
 	# http://dev.maxmind.com/geoip/geoip2/geolite2/
@@ -55,7 +58,7 @@ try:
 except:
 	pass
 
-VERSION=0.4
+VERSION=0.5
 
 
 class GGPOError(Exception):
@@ -792,6 +795,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
+	def kick_client(self, sequence):
+		# auth unsuccessful
+		response = self.reply(sequence,'\x00\x00\x00\x06')
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
+		#self.finish()
+
 	def handle_auth(self, params):
 		"""
 		Handle the initial setting of the user's nickname
@@ -801,15 +811,63 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# New connection
 		if nick in self.server.clients:
 			# Someone else is using the nick
-			# auth unsuccessful
-			response = self.reply(sequence,'\x00\x00\x00\x06')
-			logging.debug('to %s: %r' % (self.client_ident(), response))
-			self.send_queue.append(response)
-			self.finish()
+			logging.info("[%s] someone els is using the nick: %s" % (self.client_ident(), nick))
+			self.kick_client(sequence)
+			return
 
 		else:
-			# Nick is available, register.
-			logging.info('NICK: %s PORT: %d' % (nick,port))
+			# Nick is available, try to register:
+			createdb=False
+			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'users.sqlite3')
+			if not os.path.exists(dbfile):
+				createdb=True
+				try:
+					os.mkdir(os.path.dirname(dbfile))
+				except:
+					pass
+
+			conn = sqlite3.connect(dbfile)
+			cursor = conn.cursor()
+
+			if createdb==True:
+				cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+							id INTEGER PRIMARY KEY,
+							username TEXT,
+							password TEXT,
+							salt TEXT,
+							email TEXT,
+							ip TEXT,
+							date TEXT);""")
+				cursor.execute("""CREATE UNIQUE INDEX users_username_idx on users (username);""")
+				# db is empty, kick the user
+				logging.info("[%s] created empty user database" % (self.client_ident()))
+				self.kick_client(sequence)
+				return
+
+			# fetch the user's salt
+			sql = "SELECT salt FROM users WHERE username=?"
+			cursor.execute(sql, [(nick)])
+			salt=cursor.fetchone()
+			if (salt==None):
+				# user doesn't exist into database
+				logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
+				self.kick_client(sequence)
+				return
+
+			# compute the hashed password
+			h_password = hmac.new("GGPO-NG", password+salt[0], hashlib.sha512).hexdigest()
+
+			sql = "SELECT COUNT(username) FROM users WHERE password=? AND username=?"
+			cursor.execute(sql, [(h_password),(nick)])
+			result = cursor.fetchone()
+			if (result[0] != 1):
+				# wrong password
+				logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
+				self.kick_client(sequence)
+				return
+
+
+			logging.info("[%s] LOGIN OK. NICK: %s" % (self.client_ident(), nick))
 			self.nick = nick
 			self.server.clients[nick] = self
 			self.port = port
