@@ -533,18 +533,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			quarkobject.p2client=myself
 		else:
 			# you are challenging yourself
-			quarkobject.p1=self
-			quarkobject.p1client=myself
-			quarkobject.p2=self
-			quarkobject.p2client=myself
+			if (quarkobject.p1==None):
+				quarkobject.p1=self
+				quarkobject.p1client=myself
+			if (quarkobject.p2==None):
+				quarkobject.p2=self
+				quarkobject.p2client=myself
 			selfchallenge=True
 
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		if holepunch and not selfchallenge:
+		if holepunch:
 			# when UDP hole punching is enabled clients must use the udp proxy wrapper
 			pdu=self.sizepad("127.0.0.1")
-			pdu+=self.pad2hex(7001)
+			if selfchallenge:
+				pdu+=self.pad2hex(7002)
+			else:
+				pdu+=self.pad2hex(7001)
 		else:
 			pdu=self.sizepad(peer.host[0])
 			pdu+=self.pad2hex(peer.fbaport)

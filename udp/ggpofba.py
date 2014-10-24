@@ -74,9 +74,14 @@ def start_fba(args):
 def udp_proxy(args,q):
 
 	master = ("ggpo-ng.com", 7000)
-	port = 7001
 	l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-	l_sockfd.bind( ("127.0.0.1", port) )
+	try:
+		port=7001
+		l_sockfd.bind(("127.0.0.1", port))
+	except socket.error:
+		port=7002
+		l_sockfd.bind(("127.0.0.1", port))
+
 	#print "listening on 127.0.0.1:%d (udp)" % port
 
 	#use only the challenge id for the hole punching server
