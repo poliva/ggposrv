@@ -479,6 +479,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (i<30):
 			pdu+=self.sizepad(quarkobject.p1.nick)
 			pdu+=self.sizepad(quarkobject.p2.nick)
+		else:
+			# avoid crashing fba if we can't get our peer
+			pdu+='\x00\x00\x00\x00'
+			pdu+='\x00\x00\x00\x00'
+
 		pdu+='\x00\x00\x00\x00'
 		pdu+=self.pad2hex(len(quarkobject.spectators))
 
