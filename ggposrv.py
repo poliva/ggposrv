@@ -519,6 +519,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		params = 2,0
 		myself.handle_status(params)
 
+		selfchallenge=False
 		if self.side==1 and quarkobject.p1==None:
 			quarkobject.p1=self
 			quarkobject.p1client=myself
@@ -531,10 +532,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			quarkobject.p1client=myself
 			quarkobject.p2=self
 			quarkobject.p2client=myself
+			selfchallenge=True
 
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		if (holepunch):
+		if holepunch and not selfchallenge:
 			# when UDP hole punching is enabled clients must use the udp proxy wrapper
 			pdu=self.sizepad("127.0.0.1")
 			pdu+=self.pad2hex(7001)
