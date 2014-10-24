@@ -110,7 +110,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.previous_status = None	# Client's previous status (0=available, 1=away, 2=playing)
 		self.opponent = None		# Client's opponent
 		self.quark = None		# Client's quark (in-game uri)
-		self.fba = False		# Is the client an emulator?
 		self.fbaport = 0		# Emulator's fbaport
 		self.side = 0			# Client's side: 1=P1, 2=P2 (0=spectator before savestate, 3=spectator after savestate)
 		self.port = 6009		# Client's port
@@ -384,7 +383,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		for host in self.server.connections:
 			client = self.server.connections[host]
-			if client.fba==True and client.quark==quark and client.host!=self.host:
+			if client.clienttype=="player" and client.quark==quark and client.host!=self.host:
 				return client
 		return self
 
@@ -407,7 +406,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		for nick in self.server.clients:
 			client = self.get_client_from_nick(nick)
-			if client.fba==False and client.quark==quark and client.host[0]==self.host[0]:
+			if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
 				return client
 		return self
 
@@ -443,7 +442,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		for host in self.server.connections:
 			client = self.server.connections[host]
-			if client.fba==True and client.quark==quark and client.side==0:
+			if client.clienttype=="spectator" and client.quark==quark and client.side==0:
 				logging.debug('to %s: %r' % (client.client_ident(), response))
 				client.send_queue.append(response)
 				client.side=3
@@ -460,7 +459,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		for host in self.server.connections:
 			client = self.server.connections[host]
-			if client.fba==True and client.quark==quark and client.side==3:
+			if client.clienttype=="spectator" and client.quark==quark and client.side==3:
 				logging.debug('to %s: %r' % (client.client_ident(), response))
 				client.send_queue.append(response)
 
@@ -493,7 +492,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
 
-		self.fba=True
 		self.clienttype="player"
 		self.quark=quark
 		self.fbaport=fbaport
@@ -560,7 +558,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
 
-		self.fba=True
 		self.clienttype="spectator"
 		self.quark=quark
 
@@ -1194,7 +1191,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.channel.clients.remove(self)
 			logging.info("[%s] removing myself from channel" % (self.client_ident()))
 
-		if self.nick in self.server.clients and self.fba==False:
+		if self.nick in self.server.clients and self.clienttype=="client":
 			self.server.clients.pop(self.nick)
 			logging.info("[%s] removing myself from server clients" % (self.client_ident()))
 
