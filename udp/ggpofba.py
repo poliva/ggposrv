@@ -56,6 +56,8 @@ def start_fba(args):
 	if not os.path.isfile(wine):
 		wine='/usr/local/bin/wine'
 	if not os.path.isfile(wine):
+		wine=os.path.join(dirtest,"../Resources/bin/wine")
+	if not os.path.isfile(wine):
 		# assume we are on windows
 		args.insert(0, FBA)
 	else:
