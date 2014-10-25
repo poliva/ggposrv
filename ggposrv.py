@@ -594,6 +594,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
 		quarkobject.p2.send_queue.append(response)
 
+		for spectator in quarkobject.spectators:
+			spectator.send_queue.append(response)
+
 	def spectator_leave(self, quark):
 
 		quarkobject = self.server.quarks[quark]
@@ -609,6 +612,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		quarkobject.p1.send_queue.append(response)
 		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
 		quarkobject.p2.send_queue.append(response)
+
+		for spectator in quarkobject.spectators:
+			spectator.send_queue.append(response)
 
 	def handle_challenge(self, params):
 		nick, channel, sequence = params
