@@ -360,17 +360,28 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# See if the client has any commands for us.
 			if len(ready_to_read) == 1 and ready_to_read[0] == self.request:
 				try:
-					data+= self.request.recv(4096)
+					data+= self.request.recv(16384)
 
 					if not data:
 						break
-					elif len(data) >= int(data[0:4].encode('hex'),16):
+
+					if len(data)>=4:
+						length=int(data[0:4].encode('hex'),16)
+					else:
+						length=-5
+
+					while (len(data)-4 > length):
+						length=int(data[0:4].encode('hex'),16)
+						response = self.parse(data[0:length+4])
+						data=data[length+4:]
+
+					if len(data)-4 == length:
 						response = self.parse(data)
 						data=''
 
 						if response:
 							logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
-							self.request.send(response)
+							#self.request.send(response)
 
 				except:
 					self.finish()
