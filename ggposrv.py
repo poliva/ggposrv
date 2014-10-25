@@ -503,6 +503,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		quarkobject = self.server.quarks.setdefault(quark, GGPOQuark(quark))
 
+		if quarkobject.p1!=None and quarkobject.p2!=None:
+			logging.info('[%s] getpeer in a full quark: go away' % (self.client_ident(), response))
+			self.finish()
+			return
+
 		i=0
 		while True:
 			i=i+1
