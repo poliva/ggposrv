@@ -1492,6 +1492,7 @@ if __name__ == "__main__":
 	# Handle start/stop/restart commands.
 	#
 	if options.stop or options.restart:
+		print "-!- Stopping ggposrv"
 		logging.info("Stopping ggposrv")
 		pid = None
 		try:
@@ -1513,6 +1514,7 @@ if __name__ == "__main__":
 		if not options.restart:
 			sys.exit(0)
 
+	print "-!- Starting ggposrv"
 	logging.info("Starting ggposrv")
 	logging.debug("logfile = %s" % (logfile))
 
