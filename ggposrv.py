@@ -165,7 +165,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def parse(self, data):
 
 		response = ''
-		logging.debug('from %s: %r' % (self.client_ident(), data))
+		logging.debug('[PARSE] from %s: %r' % (self.client_ident(), data))
 
 		length=int(data[0:4].encode('hex'),16)
 		if (len(data)<length-4): return()
@@ -351,7 +351,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# Write any commands to the client
 			while self.send_queue:
 				msg = self.send_queue.pop(0)
-				#logging.debug('to %s: %r' % (self.client_ident(), msg))
+				#logging.debug('[SEND] to %s: %r' % (self.client_ident(), msg))
 				try:
 					self.request.send(msg)
 				except:
@@ -364,18 +364,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 					if not data:
 						break
+					#logging.debug('[RECV] from %s: %r' % (self.client_ident(), data))
 
-					if len(data)>=4:
-						length=int(data[0:4].encode('hex'),16)
-					else:
-						length=-5
-
-					while (len(data)-4 > length):
+					while (len(data)-4 > int(data[0:4].encode('hex'),16)):
 						length=int(data[0:4].encode('hex'),16)
 						response = self.parse(data[0:length+4])
 						data=data[length+4:]
 
-					if len(data)-4 == length:
+					if len(data)-4 == int(data[0:4].encode('hex'),16):
 						response = self.parse(data)
 						data=''
 
