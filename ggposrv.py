@@ -58,7 +58,7 @@ try:
 except:
 	pass
 
-VERSION=0.5
+VERSION=0.6
 
 
 class GGPOError(Exception):
