@@ -1470,7 +1470,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		#self.channels['sfiii3an']=GGPOChannel("sfiii3an", "sfiii3an", 'Street Fighter III 3rd Strike: Fight for the Future (Japan 990608, NO CD)')
 		self.channels['sfiii3n']=GGPOChannel("sfiii3n", "sfiii3n", 'Street Fighter III 3rd Strike: Fight for the Future (Japan 990512, NO CD)')
 		#self.channels['sfiii3']=GGPOChannel("sfiii3", "sfiii3n", "Street Fighter Tres")
-		self.channels['sfiii']=GGPOChannel("sfiii", "sfiii", 'Street Fighter III: New Generation (Japan 970204)')
+		#self.channels['sfiii']=GGPOChannel("sfiii", "sfiii", 'Street Fighter III: New Generation (Japan 970204)')
 		self.channels['sfiiin']=GGPOChannel("sfiiin", "sfiiin", 'Street Fighter III: New Generation (Asia 970204, NO CD)')
 		self.channels['sfz2aa']=GGPOChannel("sfz2aa", "sfz2aa", 'Street Fighter Zero 2 Alpha (960826 Asia)')
 		#self.channels['sfz2a']=GGPOChannel("sfz2a", "sfz2aa", "Street Fighter Alpha 2 Gold")
