@@ -157,7 +157,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def geolocate(self, ip):
 		try:
 			response = reader.city(ip)
-			return str(response.country.iso_code), str(response.country.name), str(response.city.name)
+			if (response.subdivisions.most_specific.name=="Barcelona" or
+			    response.subdivisions.most_specific.name=="Tarragona" or
+			    response.subdivisions.most_specific.name=="Lleida" or
+			    response.subdivisions.most_specific.name=="Lérida" or
+			    response.subdivisions.most_specific.name=="Girona" or
+			    response.subdivisions.most_specific.name=="Gerona"):
+				return "catalonia", "Catalonia", str(response.city.name)
+			else:
+				return str(response.country.iso_code), str(response.country.name), str(response.city.name)
 		except:
 			pass
 		return '', '', ''
