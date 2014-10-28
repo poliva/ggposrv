@@ -854,104 +854,103 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		nick,password,port,sequence = params
 
 		# New connection
-		if nick in self.server.clients:
-			# Someone else is using the nick
-			logging.info("[%s] someone els is using the nick: %s" % (self.client_ident(), nick))
+		createdb=False
+		dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'users.sqlite3')
+		if not os.path.exists(dbfile):
+			createdb=True
+			try:
+				os.mkdir(os.path.dirname(dbfile))
+			except:
+				pass
+
+		conn = sqlite3.connect(dbfile)
+		cursor = conn.cursor()
+
+		if createdb==True:
+			cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+						id INTEGER PRIMARY KEY,
+						username TEXT,
+						password TEXT,
+						salt TEXT,
+						email TEXT,
+						ip TEXT,
+						date TEXT);""")
+			cursor.execute("""CREATE UNIQUE INDEX users_username_idx on users (username);""")
+			# db is empty, kick the user
+			logging.info("[%s] created empty user database" % (self.client_ident()))
 			self.kick_client(sequence)
 			return
 
-		else:
-			# Nick is available, try to register:
-			createdb=False
-			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'users.sqlite3')
-			if not os.path.exists(dbfile):
-				createdb=True
-				try:
-					os.mkdir(os.path.dirname(dbfile))
-				except:
-					pass
+		# fetch the user's salt
+		sql = "SELECT salt FROM users WHERE username=?"
+		cursor.execute(sql, [(nick)])
+		salt=cursor.fetchone()
+		if (salt==None):
+			# user doesn't exist into database
+			logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
+			self.kick_client(sequence)
+			return
 
-			conn = sqlite3.connect(dbfile)
-			cursor = conn.cursor()
+		# compute the hashed password
+		h_password = hmac.new("GGPO-NG", password+salt[0], hashlib.sha512).hexdigest()
 
-			if createdb==True:
-				cursor.execute("""CREATE TABLE IF NOT EXISTS users (
-							id INTEGER PRIMARY KEY,
-							username TEXT,
-							password TEXT,
-							salt TEXT,
-							email TEXT,
-							ip TEXT,
-							date TEXT);""")
-				cursor.execute("""CREATE UNIQUE INDEX users_username_idx on users (username);""")
-				# db is empty, kick the user
-				logging.info("[%s] created empty user database" % (self.client_ident()))
-				self.kick_client(sequence)
-				return
+		sql = "SELECT COUNT(username) FROM users WHERE password=? AND username=?"
+		cursor.execute(sql, [(h_password),(nick)])
+		result = cursor.fetchone()
+		if (result[0] != 1):
+			# wrong password
+			logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
+			self.kick_client(sequence)
+			return
 
-			# fetch the user's salt
-			sql = "SELECT salt FROM users WHERE username=?"
-			cursor.execute(sql, [(nick)])
-			salt=cursor.fetchone()
-			if (salt==None):
-				# user doesn't exist into database
-				logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
-				self.kick_client(sequence)
-				return
+		if nick in self.server.clients:
+			# Someone else is using the nick
+			clone = self.get_client_from_nick(nick)
+			if clone != self:
+				logging.info("[%s] someone else is using the nick: %s (%s)" % (self.client_ident(), nick, clone.client_ident()))
+				self.server.clients.pop(nick)
+				clone.request.close()
 
-			# compute the hashed password
-			h_password = hmac.new("GGPO-NG", password+salt[0], hashlib.sha512).hexdigest()
+		logging.info("[%s] LOGIN OK. NICK: %s" % (self.client_ident(), nick))
+		self.nick = nick
+		self.server.clients[nick] = self
+		self.port = port
+		self.clienttype="client"
+		self.cc, self.country, self.city = self.geolocate(self.host[0])
 
-			sql = "SELECT COUNT(username) FROM users WHERE password=? AND username=?"
-			cursor.execute(sql, [(h_password),(nick)])
-			result = cursor.fetchone()
-			if (result[0] != 1):
-				# wrong password
-				logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
-				self.kick_client(sequence)
-				return
+		# auth successful
+		self.send_ack(sequence)
+		if self.host in self.server.connections:
+			self.server.connections.pop(self.host)
 
+		negseq=4294967293 #'\xff\xff\xff\xfd'
+		pdu='\x00\x00\x00\x02'
+		pdu+='\x00\x00\x00\x01'
+		pdu+=self.sizepad(self.nick)
+		pdu+=self.pad2hex(self.status) #status
+		pdu+='\x00\x00\x00\x00' #p2(?)
+		pdu+=self.sizepad(str(self.host[0]))
+		pdu+='\x00\x00\x00\x00' #unk1
+		pdu+='\x00\x00\x00\x00' #unk2
+		pdu+=self.sizepad(self.city)
+		pdu+=self.sizepad(self.cc)
+		pdu+=self.sizepad(self.country)
+		pdu+=self.pad2hex(self.port)      # port
+		pdu+='\x00\x00\x00\x01' # ?
+		pdu+=self.sizepad(nick)
+		pdu+=self.pad2hex(self.status) #status
+		pdu+='\x00\x00\x00\x00' #p2(?)
+		pdu+=self.sizepad(str(self.host[0]))
+		pdu+='\x00\x00\x00\x00' #unk1
+		pdu+='\x00\x00\x00\x00' #unk2
+		pdu+=self.sizepad(self.city)
+		pdu+=self.sizepad(self.cc)
+		pdu+=self.sizepad(self.country)
+		pdu+=self.pad2hex(self.port)      # port
 
-			logging.info("[%s] LOGIN OK. NICK: %s" % (self.client_ident(), nick))
-			self.nick = nick
-			self.server.clients[nick] = self
-			self.port = port
-			self.clienttype="client"
-			self.cc, self.country, self.city = self.geolocate(self.host[0])
-
-			# auth successful
-			self.send_ack(sequence)
-			if self.host in self.server.connections:
-				self.server.connections.pop(self.host)
-
-			negseq=4294967293 #'\xff\xff\xff\xfd'
-			pdu='\x00\x00\x00\x02'
-			pdu+='\x00\x00\x00\x01'
-			pdu+=self.sizepad(self.nick)
-			pdu+=self.pad2hex(self.status) #status
-			pdu+='\x00\x00\x00\x00' #p2(?)
-			pdu+=self.sizepad(str(self.host[0]))
-			pdu+='\x00\x00\x00\x00' #unk1
-			pdu+='\x00\x00\x00\x00' #unk2
-			pdu+=self.sizepad(self.city)
-			pdu+=self.sizepad(self.cc)
-			pdu+=self.sizepad(self.country)
-			pdu+=self.pad2hex(self.port)      # port
-			pdu+='\x00\x00\x00\x01' # ?
-			pdu+=self.sizepad(nick)
-			pdu+=self.pad2hex(self.status) #status
-			pdu+='\x00\x00\x00\x00' #p2(?)
-			pdu+=self.sizepad(str(self.host[0]))
-			pdu+='\x00\x00\x00\x00' #unk1
-			pdu+='\x00\x00\x00\x00' #unk2
-			pdu+=self.sizepad(self.city)
-			pdu+=self.sizepad(self.cc)
-			pdu+=self.sizepad(self.country)
-			pdu+=self.pad2hex(self.port)      # port
-
-			response = self.reply(negseq,pdu)
-			logging.debug('to %s: %r' % (self.client_ident(), response))
-			self.send_queue.append(response)
+		response = self.reply(negseq,pdu)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
 
 
 	def handle_status(self, params):
