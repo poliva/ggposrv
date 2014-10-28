@@ -1044,7 +1044,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		pdu=''
 		i=0
-		for target in self.server.channels:
+		for target in sorted(self.server.channels):
 			i=i+1
 			channel = self.server.channels.get(target)
 			pdu+=self.sizepad(channel.name)
