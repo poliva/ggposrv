@@ -116,7 +116,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
 		self.cc = "null"		# Client's country code
-		self.password = None		# Client's entered password
 		self.lastmsg = 0		# timestamp of the last chat message
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
@@ -917,7 +916,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.nick = nick
 			self.server.clients[nick] = self
 			self.port = port
-			self.password = password
 			self.clienttype="client"
 			self.cc, self.country, self.city = self.geolocate(self.host[0])
 
