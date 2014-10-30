@@ -516,7 +516,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+='\x00\x00\x00\x00'
 			pdu+='\x00\x00\x00\x00'
 			pdu+='\x00\x00\x00\x00'
-			pdu+=self.pad2hex(1)
+			pdu+=self.pad2hex(0)
 
 			response = self.reply(sequence,pdu)
 			logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -525,11 +525,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# now broadcast the quark to the client
 
 			# TODO: only do this if file exists
-			time.sleep(2)
+			#time.sleep(2)
 			f=open('quark-'+quark+'-gamebuffer.fs', 'rb')
 			response = f.read()
 			f.close()
-			self.send_queue.append(response)
+			#self.send_queue.append(response)
+			self.request.send(response)
 			self.side=3
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 
@@ -539,7 +540,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			response = f.read(1024)
 			while (response):
 				time.sleep(1)
-				self.send_queue.append(response)
+				self.request.send(response)
+				#self.send_queue.append(response)
 				response = f.read(1024)
 				logging.debug('to %s: %r' % (self.client_ident(), response))
 			f.close()
@@ -692,7 +694,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			response = self.reply(negseq,pdu)
 
 			negseq=4294967286 #'\xff\xff\xff\xf6'
-			pdu=self.pad2hex(1)
+			pdu=self.pad2hex(0)
 			response+=self.reply(negseq,pdu)
 
 			self.send_queue.append(response)
