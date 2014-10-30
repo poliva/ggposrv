@@ -94,6 +94,7 @@ class GGPOQuark(object):
 		self.p2 = None
 		self.p2client = None
 		self.spectators = set()
+		self.recorded = False
 
 class GGPOClient(SocketServer.BaseRequestHandler):
 	"""
@@ -465,6 +466,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=gamebuf
 		response = self.reply(negseq,pdu)
 
+		# TODO: path traversal & posisble RCE vuln here
+		quarkobject = self.server.quarks[quark]
+		if quarkobject.recorded == False:
+			quarkobject.recorded=True
+			f=open('quark-'+quark+'-gamebuffer.fs', 'wb')
+			f.write(response)
+			f.close()
+
 		for host in self.server.connections:
 			client = self.server.connections[host]
 			if client.clienttype=="spectator" and client.quark==quark and client.side==0:
@@ -482,6 +491,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=block2+block1+gamebuf
 		response = self.reply(negseq,pdu)
 
+		# TODO: path traversal & posisble RCE vuln here
+		# TODO: see if using zlib has any benefit here
+		f=open('quark-'+quark+'-savestate.fs', 'a+b')
+		f.write(response)
+		f.close()
+
 		for host in self.server.connections:
 			client = self.server.connections[host]
 			if client.clienttype=="spectator" and client.quark==quark and client.side==3:
@@ -491,7 +506,45 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_getnicks(self, params):
 		quark, sequence = params
 
-		quarkobject = self.server.quarks[quark]
+		# to replay a saved quark
+		try:
+			quarkobject = self.server.quarks[quark]
+		except KeyError:
+
+			# TODO: would be nice to store & return the real player nicknames
+			pdu='\x00\x00\x00\x00'
+			pdu+='\x00\x00\x00\x00'
+			pdu+='\x00\x00\x00\x00'
+			pdu+='\x00\x00\x00\x00'
+			pdu+=self.pad2hex(1)
+
+			response = self.reply(sequence,pdu)
+			logging.debug('to %s: %r' % (self.client_ident(), response))
+			self.send_queue.append(response)
+
+			# now broadcast the quark to the client
+
+			# TODO: only do this if file exists
+			time.sleep(2)
+			f=open('quark-'+quark+'-gamebuffer.fs', 'rb')
+			response = f.read()
+			f.close()
+			self.send_queue.append(response)
+			self.side=3
+			logging.debug('to %s: %r' % (self.client_ident(), response))
+
+			# TODO: what if the spectator closes the emulator while we're broadcasting?
+			time.sleep(2)
+			f=open('quark-'+quark+'-savestate.fs', 'rb')
+			response = f.read(1024)
+			while (response):
+				time.sleep(1)
+				self.send_queue.append(response)
+				response = f.read(1024)
+				logging.debug('to %s: %r' % (self.client_ident(), response))
+			f.close()
+			return()
+
 
 		i=0
 		while True:
@@ -592,10 +645,61 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
+		# call auto_spectate() to record the game
+		self.auto_spectate(quark)
+
+	def auto_spectate(self, quark):
+
+		# TODO: maybe this should be a new thread?
+		# sleep 15 works
+		time.sleep(5)
+
+		quarkobject = self.server.quarks[quark]
+
+		negseq=4294967285 #'\xff\xff\xff\xf5'
+		pdu=''
+		response = self.reply(negseq,pdu)
+
+		negseq=4294967286 #'\xff\xff\xff\xf6'
+		pdu=self.pad2hex(len(quarkobject.spectators)+1)
+		response+=self.reply(negseq,pdu)
+
+		# make the player's FBA send us the game data, to store it on the server
+		logging.debug('to %s: %r' % (quarkobject.p1.client_ident(), response))
+		quarkobject.p1.send_queue.append(response)
+		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
+		quarkobject.p2.send_queue.append(response)
+
 	def handle_spectator(self,params):
 		quark, sequence = params
 
-		quarkobject = self.server.quarks[quark]
+		try:
+			quarkobject = self.server.quarks[quark]
+		except KeyError:
+
+			# to replay a saved quark
+
+			logging.info('[%s] spectating saved quark: %s' % (self.client_ident(), quark))
+
+			# send ack to the client's ggpofba
+			self.send_ack(sequence)
+
+			self.clienttype="spectator"
+			self.quark=quark
+
+			negseq=4294967285 #'\xff\xff\xff\xf5'
+			pdu=''
+			response = self.reply(negseq,pdu)
+
+			negseq=4294967286 #'\xff\xff\xff\xf6'
+			pdu=self.pad2hex(1)
+			response+=self.reply(negseq,pdu)
+
+			self.send_queue.append(response)
+
+			return()
+
+		logging.info('[%s] spectating real-time quark: %s' % (self.client_ident(), quark))
 
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
