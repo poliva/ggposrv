@@ -520,30 +520,33 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			response = self.reply(sequence,pdu)
 			logging.debug('to %s: %r' % (self.client_ident(), response))
-			self.send_queue.append(response)
+			time.sleep(2)
+			self.request.send(response)
 
 			# now broadcast the quark to the client
 
 			# TODO: only do this if file exists
-			#time.sleep(2)
+			time.sleep(1)
 			f=open('quark-'+quark+'-gamebuffer.fs', 'rb')
 			response = f.read()
 			f.close()
-			#self.send_queue.append(response)
 			self.request.send(response)
 			self.side=3
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 
-			# TODO: what if the spectator closes the emulator while we're broadcasting?
-			time.sleep(2)
+			time.sleep(1)
 			f=open('quark-'+quark+'-savestate.fs', 'rb')
-			response = f.read(1024)
+			response = f.read(376)
 			while (response):
-				time.sleep(1)
-				self.request.send(response)
-				#self.send_queue.append(response)
-				response = f.read(1024)
-				logging.debug('to %s: %r' % (self.client_ident(), response))
+				time.sleep(0.9)
+				try:
+					self.request.send(response)
+					logging.debug('to %s: %r' % (self.client_ident(), response))
+				except:
+					logging.debug('[%s]: spectator disconnected from broadcast' % (self.client_ident()))
+					break
+
+				response = f.read(376)
 			f.close()
 			return()
 
