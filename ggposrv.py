@@ -1432,6 +1432,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
 					self.server.quarks.pop(self.quark)
 
+					# broadcast the quark id for replays
+					nick="System"
+					msg = "Quark id: "+str(quarkobject.quark)
+					negseq=4294967294 #'\xff\xff\xff\xfe'
+					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
+					logging.debug('to %s: %r' % (self.client_ident(), response))
+					quarkobject.p1client.send_queue.append(response)
+					quarkobject.p2client.send_queue.append(response)
+
 				if quarkobject.p1==self:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
 					quarkobject.p2.request.close()
