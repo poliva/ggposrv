@@ -725,7 +725,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		except KeyError:
 
 			# to replay a saved quark
-
 			logging.info('[%s] spectating saved quark: %s' % (self.client_ident(), quark))
 
 			# send ack to the client's ggpofba
@@ -733,16 +732,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			self.clienttype="spectator"
 			self.quark=quark
-
-			negseq=4294967285 #'\xff\xff\xff\xf5'
-			pdu=''
-			response = self.reply(negseq,pdu)
-
-			negseq=4294967286 #'\xff\xff\xff\xf6'
-			pdu=self.pad2hex(1)
-			response+=self.reply(negseq,pdu)
-
-			self.send_queue.append(response)
 
 			return()
 
