@@ -519,7 +519,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# TODO: see if using zlib has any benefit here
 		# record match for future broadcast
-		if self.check_quark_format(quark):
+		quarkobject = self.server.quarks[quark]
+		if self.check_quark_format(quark) and quarkobject.recorded == True:
 			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs')
 			if not os.path.exists(quarkfile):
 				try:
