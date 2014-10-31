@@ -154,6 +154,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('[%s] Could not find client: %s' % (self.client_ident(), nick))
 		return self
 
+	def check_quark_format(self,quark):
+		a = re.compile("^challenge-[0-9]{4}-[0-9]{10,11}[.][0-9]{2}$")
+		if a.match(quark):
+			return True
+		else:
+			return False
+
 	def geolocate(self, ip):
 		iso_code=''
 		country=''
@@ -466,20 +473,33 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=gamebuf
 		response = self.reply(negseq,pdu)
 
-		# TODO: path traversal & posisble RCE vuln here
-		quarkobject = self.server.quarks[quark]
-		if quarkobject.recorded == False:
-			quarkobject.recorded=True
-			f=open('quark-'+quark+'-gamebuffer.fs', 'wb')
-			f.write(response)
-			f.close()
-
 		for host in self.server.connections:
 			client = self.server.connections[host]
 			if client.clienttype=="spectator" and client.quark==quark and client.side==0:
 				logging.debug('to %s: %r' % (client.client_ident(), response))
 				client.send_queue.append(response)
 				client.side=3
+
+		# record match for future broadcast
+		quarkobject = self.server.quarks[quark]
+		if self.check_quark_format(quark) and quarkobject.recorded == False:
+			quarkobject.recorded=True
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
+			if not os.path.exists(quarkfile):
+				try:
+					os.mkdir(os.path.dirname(quarkfile))
+				except:
+					pass
+				f=open(quarkfile, 'wb')
+				f.write(response)
+				f.close()
+			# store player nicknames
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-nicknames.txt')
+			f=open(quarkfile, 'w')
+			f.write(quarkobject.p1.nick+"\n")
+			f.write(quarkobject.p2.nick+"\n")
+			f.close()
+
 
 	def handle_savestate(self, params):
 		quark, block1, block2, gamebuf, sequence = params
@@ -491,17 +511,24 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=block2+block1+gamebuf
 		response = self.reply(negseq,pdu)
 
-		# TODO: path traversal & posisble RCE vuln here
-		# TODO: see if using zlib has any benefit here
-		f=open('quark-'+quark+'-savestate.fs', 'a+b')
-		f.write(response)
-		f.close()
-
 		for host in self.server.connections:
 			client = self.server.connections[host]
 			if client.clienttype=="spectator" and client.quark==quark and client.side==3:
 				logging.debug('to %s: %r' % (client.client_ident(), response))
 				client.send_queue.append(response)
+
+		# TODO: see if using zlib has any benefit here
+		# record match for future broadcast
+		if self.check_quark_format(quark):
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs')
+			if not os.path.exists(quarkfile):
+				try:
+					os.mkdir(os.path.dirname(quarkfile))
+				except:
+					pass
+			f=open(quarkfile, 'ab')
+			f.write(response)
+			f.close()
 
 	def handle_getnicks(self, params):
 		quark, sequence = params
@@ -511,45 +538,63 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			quarkobject = self.server.quarks[quark]
 		except KeyError:
 
-			# TODO: would be nice to store & return the real player nicknames
+			# make sure the quark format is valid
+			if not self.check_quark_format(quark):
+				return()
+
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-nicknames.txt')
+			if not os.path.exists(quarkfile):
+				return()
+
+			f=open(quarkfile, 'r')
+			nicknames = [x.strip('\n') for x in f.readlines()]
+			f.close()
+
 			pdu='\x00\x00\x00\x00'
-			pdu+='\x00\x00\x00\x00'
-			pdu+='\x00\x00\x00\x00'
+			pdu+=self.sizepad(nicknames[0])
+			pdu+=self.sizepad(nicknames[1])
 			pdu+='\x00\x00\x00\x00'
 			pdu+=self.pad2hex(0)
 
 			response = self.reply(sequence,pdu)
-			logging.debug('to %s: %r' % (self.client_ident(), response))
 			time.sleep(2)
+			logging.debug('to %s: %r' % (self.client_ident(), response))
 			self.request.send(response)
 
 			# now broadcast the quark to the client
 
-			# TODO: only do this if file exists
-			time.sleep(1)
-			f=open('quark-'+quark+'-gamebuffer.fs', 'rb')
-			response = f.read()
-			f.close()
-			self.request.send(response)
-			self.side=3
-			logging.debug('to %s: %r' % (self.client_ident(), response))
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
+			if not os.path.exists(quarkfile):
+				return()
 
 			time.sleep(1)
-			f=open('quark-'+quark+'-savestate.fs', 'rb')
+			f=open(quarkfile, 'rb')
+			response = f.read()
+			f.close()
+			logging.debug('to %s: %r' % (self.client_ident(), response))
+			self.request.send(response)
+			self.side=3
+
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs')
+			if not os.path.exists(quarkfile):
+				return()
+
+			time.sleep(1)
+			f=open(quarkfile)
 			response = f.read(376)
 			while (response):
 				time.sleep(0.9)
 				try:
-					self.request.send(response)
 					logging.debug('to %s: %r' % (self.client_ident(), response))
+					self.request.send(response)
 				except:
 					logging.debug('[%s]: spectator disconnected from broadcast' % (self.client_ident()))
 					break
 
 				response = f.read(376)
 			f.close()
+			self.request.close()
 			return()
-
 
 		i=0
 		while True:
@@ -573,6 +618,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response = self.reply(sequence,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
+
+		# call auto_spectate() to record the game
+		logging.info('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
+		self.auto_spectate(quark)
+
 
 	def handle_getpeer(self, params):
 		quark, fbaport, sequence = params
@@ -650,30 +700,21 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
-		# call auto_spectate() to record the game
-		self.auto_spectate(quark)
-
 	def auto_spectate(self, quark):
 
-		# TODO: maybe this should be a new thread?
-		# sleep 15 works
-		time.sleep(5)
-
-		quarkobject = self.server.quarks[quark]
+		logging.info('[%s] entering AUTO-SPECTATE' % (self.client_ident()))
 
 		negseq=4294967285 #'\xff\xff\xff\xf5'
 		pdu=''
 		response = self.reply(negseq,pdu)
 
 		negseq=4294967286 #'\xff\xff\xff\xf6'
-		pdu=self.pad2hex(len(quarkobject.spectators)+1)
+		pdu=self.pad2hex(1)
 		response+=self.reply(negseq,pdu)
 
 		# make the player's FBA send us the game data, to store it on the server
-		logging.debug('to %s: %r' % (quarkobject.p1.client_ident(), response))
-		quarkobject.p1.send_queue.append(response)
-		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
-		quarkobject.p2.send_queue.append(response)
+		logging.debug('to %s: %r' % (self.client_ident(), response))
+		self.send_queue.append(response)
 
 	def handle_spectator(self,params):
 		quark, sequence = params
@@ -697,7 +738,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			response = self.reply(negseq,pdu)
 
 			negseq=4294967286 #'\xff\xff\xff\xf6'
-			pdu=self.pad2hex(0)
+			pdu=self.pad2hex(1)
 			response+=self.reply(negseq,pdu)
 
 			self.send_queue.append(response)
@@ -719,7 +760,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response = self.reply(negseq,pdu)
 
 		negseq=4294967286 #'\xff\xff\xff\xf6'
-		pdu=self.pad2hex(len(quarkobject.spectators))
+		pdu=self.pad2hex(len(quarkobject.spectators)+1)
 		response+=self.reply(negseq,pdu)
 
 		# this updates the number of spectators in both players FBAs
@@ -738,7 +779,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		quarkobject.spectators.remove(self)
 
 		negseq=4294967286 #'\xff\xff\xff\xf6'
-		pdu=self.pad2hex(len(quarkobject.spectators))
+		pdu=self.pad2hex(len(quarkobject.spectators)+1)
 		response=self.reply(negseq,pdu)
 
 		# this updates the number of spectators in both players FBAs
