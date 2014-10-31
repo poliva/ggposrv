@@ -623,6 +623,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.info('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
 		self.auto_spectate(quark)
 
+		# announce the match to the public
+		myself=self.get_myclient_from_quark(quark)
+		params = 2,0
+		myself.handle_status(params)
 
 	def handle_getpeer(self, params):
 		quark, fbaport, sequence = params
@@ -657,10 +661,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		myself=self.get_myclient_from_quark(quark)
 		self.side=myself.side
 		self.nick=myself.nick
-
-		# announce the match to the public
-		params = 2,0
-		myself.handle_status(params)
 
 		selfchallenge=False
 		if self.side==1 and quarkobject.p1==None:
