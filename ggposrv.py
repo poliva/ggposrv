@@ -1373,7 +1373,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		quarks=0
 		for quark in self.server.quarks.values():
 			if quark.p1!=None and quark.p2!=None:
-			quarks=quarks+1
+				quarks=quarks+1
 
 		if quarks==0:
 			motd+='-!- At the moment no one is playing :(\n'
@@ -1856,6 +1856,7 @@ if __name__ == "__main__":
 	parser.add_option("-V", "--verbose", dest="verbose", action="store_true", default=False, help="Be verbose (show lots of output)")
 	parser.add_option("-l", "--log-stdout", dest="log_stdout", action="store_true", default=False, help="Also log to stdout")
 	parser.add_option("-f", "--foreground", dest="foreground", action="store_true", default=False, help="Do not go into daemon mode.")
+	parser.add_option("-H", "--http", dest="httpserver", action="store_true", default=False, help="Start debug http server on port 8000")
 	parser.add_option("-u", "--udpholepunch", dest="udpholepunch", action="store_true", default=False, help="Use UDP hole punching.")
 
 	(options, args) = parser.parse_args()
@@ -1940,11 +1941,12 @@ if __name__ == "__main__":
 		ggposerver = GGPOServer((options.listen_address, int(options.listen_port)), GGPOClient)
 		logging.info('Starting ggposrv on %s:%s/tcp' % (options.listen_address, options.listen_port))
 
-		webserver = HTTPServer((options.listen_address, 8000), GGPOHttpHandler)
-		logging.info('Starting http server on %s:8000/tcp' % (options.listen_address))
-		t2=Thread(target=webserver.serve_forever)
-		t2.daemon=True
-		t2.start()
+		if options.httpserver:
+			webserver = HTTPServer((options.listen_address, 8000), GGPOHttpHandler)
+			logging.info('Starting http server on %s:8000/tcp' % (options.listen_address))
+			t2=Thread(target=webserver.serve_forever)
+			t2.daemon=True
+			t2.start()
 
 		ggposerver.serve_forever()
 
