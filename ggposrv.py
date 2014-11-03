@@ -1295,7 +1295,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# allow "System" user to send broadcast messages to *ALL* connected users
 		if (self.nick=="System"):
-			for client in self.server.clients:
+			for client in self.server.clients.values():
 				if client.clienttype=="client":
 					negseq=4294967294 #'\xff\xff\xff\xfe'
 					response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
