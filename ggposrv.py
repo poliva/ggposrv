@@ -1490,8 +1490,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					negseq=4294967294 #'\xff\xff\xff\xfe'
 					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
 					logging.debug('to %s: %r' % (self.client_ident(), response))
-					quarkobject.p1client.send_queue.append(response)
-					quarkobject.p2client.send_queue.append(response)
+					if (quarkobject.p1client!=None):
+						quarkobject.p1client.send_queue.append(response)
+					if (quarkobject.p2client!=None):
+						quarkobject.p2client.send_queue.append(response)
 
 				if quarkobject.p1==self and self.quark!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
