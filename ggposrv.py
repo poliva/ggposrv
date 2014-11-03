@@ -67,6 +67,9 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 		msg="Clients:"+str(ggposerver.clients)+"\n"
 		for client in ggposerver.clients.values():
 			msg+= " "+str(client)+"\n"
+			msg+="     "+str(client.nick)+"\n"
+			msg+="     "+str(client.clienttype)+"\n"
+			msg+="     "+str(client.status)+"\n"
 			msg+="     "+str(client.channel.name)+"\n"
 
 		msg+="Channels:"+str(ggposerver.channels)+"\n"
@@ -79,6 +82,8 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 		for quark in ggposerver.quarks.values():
 			msg+= " "+str(quark)+"\n"
 			msg+="     "+str(quark.quark)+"\n"
+			msg+="         P1: "+str(quark.p1.nick)+" / "+str(quark.p1client.nick)+"\n"
+			msg+="         P2: "+str(quark.p2.nick)+" / "+str(quark.p2client.nick)+"\n"
 
 		self.wfile.write(msg)
 
