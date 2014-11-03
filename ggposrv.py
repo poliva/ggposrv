@@ -76,7 +76,7 @@ class GGPOChannel(object):
 	"""
 	Object representing an GGPO channel.
 	"""
-	def __init__(self, name, rom, topic, motd='Welcome to the unofficial GGPO-NG server.\nThis is still very beta, some things might not work as expected.\nFeel free to report any issues to @pof\n\n'):
+	def __init__(self, name, rom, topic, motd='Welcome to FightCade server.\nThis is still very beta, some things might not work as expected.\nFeel free to report any issues to @pof\n\n'):
 		self.name = name
 		self.rom = rom
 		self.topic = topic
@@ -1310,7 +1310,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 #		if channel=="ssf2t":
 #			motd+="Visit http://www.strevival.com\n\n"
 
-		motd+='-!- ggpo-ng server version '+str(VERSION)+'\n'
+		motd+='-!- FightCade server version '+str(VERSION)+'\n'
 
 		clients = len(self.server.clients)
 		if clients==1:
@@ -1781,7 +1781,7 @@ if __name__ == "__main__":
 
 	global holepunch
 
-	print "-!- ggpo-ng server version " + str(VERSION)
+	print "-!- FightCade server version " + str(VERSION)
 	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
 
 	#
