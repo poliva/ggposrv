@@ -51,6 +51,7 @@ import hmac
 import hashlib
 import sqlite3
 from threading import Thread
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 try:
 	# http://dev.maxmind.com/geoip/geoip2/geolite2/
 	import geoip2.database
@@ -60,6 +61,35 @@ except:
 
 VERSION=0.7
 
+class GGPOHttpHandler(BaseHTTPRequestHandler):
+
+	def print_dump(self):
+		msg="Clients:"+str(ggposerver.clients)+"\n"
+		for client in ggposerver.clients.values():
+			msg+= " "+str(client)+"\n"
+			msg+="     "+str(client.channel.name)+"\n"
+
+		msg+="Channels:"+str(ggposerver.channels)+"\n"
+		for channel in ggposerver.channels.values():
+			msg+=" "+str(channel.name)+" "+str(channel)+"\n"
+			for client in channel.clients:
+				msg+="     "+str(client.nick)+" "+str(client)+"\n"
+
+		msg+="Quarks:"+str(ggposerver.quarks)+"\n"
+		for quark in ggposerver.quarks.values():
+			msg+= " "+str(quark)+"\n"
+			msg+="     "+str(quark.quark)+"\n"
+
+		self.wfile.write(msg)
+
+	#Handler for the GET requests
+	def do_GET(self):
+		self.send_response(200)
+		self.send_header('Content-type','text/html')
+		self.end_headers()
+		# Send the message
+		self.print_dump()
+		return
 
 class GGPOError(Exception):
 	"""
@@ -1793,7 +1823,7 @@ class Daemon:
 
 if __name__ == "__main__":
 
-	global holepunch
+	global holepunch, ggposerver
 
 	print "-!- FightCade server version " + str(VERSION)
 	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
@@ -1895,7 +1925,15 @@ if __name__ == "__main__":
 
 		ggposerver = GGPOServer((options.listen_address, int(options.listen_port)), GGPOClient)
 		logging.info('Starting ggposrv on %s:%s/tcp' % (options.listen_address, options.listen_port))
+
+		webserver = HTTPServer((options.listen_address, 8000), GGPOHttpHandler)
+		logging.info('Starting http server on %s:8000/tcp' % (options.listen_address))
+		t2=Thread(target=webserver.serve_forever)
+		t2.daemon=True
+		t2.start()
+
 		ggposerver.serve_forever()
+
 	except socket.error, e:
 		logging.error(repr(e))
 		sys.exit(-2)
