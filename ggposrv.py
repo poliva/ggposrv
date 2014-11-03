@@ -365,7 +365,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				nick=data[16:16+nicklen]
 				params = nick,sequence
 
-			if (command!=0x11):
+			if (command!="savestate"):
 				logging.info('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
 			else:
 				logging.debug('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
