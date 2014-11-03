@@ -695,9 +695,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				break
 
 		if peer==self:
-			logging.debug('[%s] couldn\'t find peer: %s' % (self.client_ident() , peer.client_ident()))
+			logging.info('[%s] couldn\'t find peer: %s' % (self.client_ident() , peer.client_ident()))
 		else:
-			logging.debug('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
+			logging.info('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
 
 		myself=self.get_myclient_from_quark(quark)
 		self.side=myself.side
