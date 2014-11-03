@@ -1813,9 +1813,8 @@ class Daemon:
 			sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
 			sys.exit(-2)
 
-		# Close STDIN, STDOUT and STDERR so we don't tie up the controlling
-		# terminal
-		for fd in (0, 1, 2):
+		# Close STDIN, STDOUT so we don't tie up the controlling terminal
+		for fd in (0, 1):
 			try:
 				os.close(fd)
 			except OSError:
