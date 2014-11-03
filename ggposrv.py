@@ -82,8 +82,10 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 		for quark in ggposerver.quarks.values():
 			msg+= " "+str(quark)+"\n"
 			msg+="     "+str(quark.quark)+"\n"
-			msg+="         P1: "+str(quark.p1.nick)+" / "+str(quark.p1client.nick)+"\n"
-			msg+="         P2: "+str(quark.p2.nick)+" / "+str(quark.p2client.nick)+"\n"
+			if quarkobject.p1!=None and quarkobject.p1client!=None:
+				msg+="         P1: "+str(quark.p1.nick)+" / "+str(quark.p1client.nick)+"\n"
+			if quarkobject.p2!=None and quarkobject.p2client!=None:
+				msg+="         P2: "+str(quark.p2.nick)+" / "+str(quark.p2client.nick)+"\n"
 
 		self.wfile.write(msg)
 
@@ -1460,7 +1462,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 				mypeer.side=0
 				mypeer.opponent=None
-				mypeer.quark=None
+				if (mypeer != self):
+					mypeer.quark=None
 				if (mypeer.previous_status!=None and mypeer.previous_status!=2):
 					mypeer.status=mypeer.previous_status
 				else:
@@ -1470,7 +1473,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				mypeer.handle_status(params)
 
 				# remove quark if we are a player that closes ggpofba
-				if quarkobject.p1==self or quarkobject.p2==self:
+				if quarkobject.p1==self or quarkobject.p2==self and self.quark!=None:
 					# this will kill the emulators to avoid assertion failed errors with future players
 					# produces an ugly "guru meditation" error on the peer's FBA, but lets the player
 					# do another game without having to cross challenge
@@ -1490,10 +1493,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					quarkobject.p1client.send_queue.append(response)
 					quarkobject.p2client.send_queue.append(response)
 
-				if quarkobject.p1==self:
+				if quarkobject.p1==self and self.quark!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
 					quarkobject.p2.request.close()
-				if quarkobject.p2==self:
+				if quarkobject.p2==self and self.quark!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p1.client_ident()))
 					quarkobject.p1.request.close()
 
