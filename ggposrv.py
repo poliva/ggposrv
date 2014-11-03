@@ -1369,7 +1369,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			motd+='-!- There are '+str(clients)+' clients connected to the server.\n'
 
-		quarks = len(self.server.quarks)
+		#quarks = len(self.server.quarks)
+		quarks=0
+		for quark in self.server.quarks.values():
+			if quark.p1!=None and quark.p2!=None:
+			quarks=quarks+1
+
 		if quarks==0:
 			motd+='-!- At the moment no one is playing :(\n'
 		elif quarks==1:
