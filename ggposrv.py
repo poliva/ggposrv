@@ -812,7 +812,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0a')
-			logging.info('challenge NO_ACK to %s: tried to challenge client %s (%s) but client.status=%d and self.status=%d' % (self.client_ident(), client.client_ident(), nick, client.status, self.status ))
+			logging.info('challenge NO_ACK to %s: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%s and self.channel=%s and self.channel.name=% and channel=%s' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel ))
 			self.send_queue.append(response)
 
 	def handle_accept(self, params):
@@ -1262,6 +1262,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# send the ACK to the client
 		self.send_ack(sequence)
+
+		# allow "System" user to send broadcast messages to *ALL* connected users
+		if (self.nick=="System"):
+			for client in self.server.clients:
+				if client.clienttype=="client":
+					negseq=4294967294 #'\xff\xff\xff\xfe'
+					response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
+					logging.debug('to %s: %r' % (client.client_ident(), response))
+					client.send_queue.append(response)
+			return
 
 		timestamp = int(time.time())
 		if (timestamp-self.lastmsg < 2):
