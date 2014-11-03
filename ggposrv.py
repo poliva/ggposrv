@@ -335,7 +335,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				nick=data[16:16+nicklen]
 				params = nick,sequence
 
-			logging.info('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
+			if (command!=0x11):
+				logging.info('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
+			else:
+				logging.debug('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
 
 			try:
 				handler = getattr(self, 'handle_%s' % (command), None)
@@ -621,7 +624,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_queue.append(response)
 
 		# call auto_spectate() to record the game
-		logging.info('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
+		logging.debug('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
 		self.auto_spectate(quark)
 
 		# announce the match to the public
@@ -703,7 +706,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 	def auto_spectate(self, quark):
 
-		logging.info('[%s] entering AUTO-SPECTATE' % (self.client_ident()))
+		logging.debug('[%s] entering AUTO-SPECTATE' % (self.client_ident()))
 
 		negseq=4294967285 #'\xff\xff\xff\xf5'
 		pdu=''
@@ -809,7 +812,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0a')
-			logging.info('challenge NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('challenge NO_ACK to %s: tried to challenge client %s (%s) but client.status=%d and self.status=%d' % (self.client_ident(), client.client_ident(), nick, client.status, self.status ))
 			self.send_queue.append(response)
 
 	def handle_accept(self, params):
@@ -1109,7 +1112,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.status = status
 		else:
 			# do nothing if the user tries to set an invalid status
-			logging.debug('[%s]: trying to set invalid status: %d , self.status=%d, sequence=%d, self.opponent=%s' % (self.client_ident(), status, self.status, sequence, self.opponent))
+			logging.info('[%s]: trying to set invalid status: %d , self.status=%d, sequence=%d, self.opponent=%s' % (self.client_ident(), status, self.status, sequence, self.opponent))
 			return
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
