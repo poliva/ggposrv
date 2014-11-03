@@ -82,9 +82,9 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 		for quark in ggposerver.quarks.values():
 			msg+= " "+str(quark)+"\n"
 			msg+="     "+str(quark.quark)+"\n"
-			if quarkobject.p1!=None and quarkobject.p1client!=None:
+			if quark.p1!=None and quark.p1client!=None:
 				msg+="         P1: "+str(quark.p1.nick)+" / "+str(quark.p1client.nick)+"\n"
-			if quarkobject.p2!=None and quarkobject.p2client!=None:
+			if quark.p2!=None and quark.p2client!=None:
 				msg+="         P2: "+str(quark.p2.nick)+" / "+str(quark.p2client.nick)+"\n"
 
 		self.wfile.write(msg)
