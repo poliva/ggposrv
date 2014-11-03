@@ -359,6 +359,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				gamebuf=data[20+quarklen:length+4]
 				params = quark,gamebuf,sequence
 
+			if (command==0x13):
+				command="ggpotv"
+				quarklen=int(data[12:16].encode('hex'),16)
+				quark=data[16:16+quarklen]
+				gamebuf=data[20+quarklen:length+4]
+				params = quark,gamebuf,sequence
+
 			if (command==0x14):
 				command="spectator"
 				quarklen=int(data[12:16].encode('hex'),16)
@@ -380,7 +387,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			try:
 				handler = getattr(self, 'handle_%s' % (command), None)
 				if not handler:
-					logging.info('No handler for command: %s. Full line: %r' % (command, data))
+					logging.info('[%s] No handler for command: %s. Full line: %r' % (self.client_ident(), command, data))
 					if self.nick==None: return()
 					command="unknown"
 					params = sequence
@@ -991,6 +998,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client = self.get_client_from_nick(nick)
 		logging.debug('to %s: %r' % (client.client_ident(), response))
 		client.send_queue.append(response)
+
+	def handle_ggpotv(self, params):
+		# XXX: not sure what to do with this...
+		quark, gamebuf, sequence = params
+		self.send_ack(sequence)
 
 	def handle_unknown(self, params):
 		sequence = params
