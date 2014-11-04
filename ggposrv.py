@@ -820,10 +820,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response=self.reply(negseq,pdu)
 
 		# this updates the number of spectators in both players FBAs
-		logging.debug('to %s: %r' % (quarkobject.p1.client_ident(), response))
-		quarkobject.p1.send_queue.append(response)
-		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
-		quarkobject.p2.send_queue.append(response)
+		try:
+			logging.debug('to %s: %r' % (quarkobject.p1.client_ident(), response))
+			quarkobject.p1.send_queue.append(response)
+			logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
+			quarkobject.p2.send_queue.append(response)
+		except:
+			pass
 
 		for spectator in quarkobject.spectators:
 			spectator.send_queue.append(response)
@@ -1519,15 +1522,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p1.client_ident()))
 					quarkobject.p1.request.close()
 
-			except KeyError:
+			except KeyError, AttributeError:
 				pass
 
 		if self.clienttype=="spectator":
-			logging.info("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
 			# this client is an spectator
 			try:
+				logging.info("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
 				self.spectator_leave(self.quark)
-			except KeyError:
+			except KeyError, AttributeError:
 				pass
 
 		if self.host in self.server.connections:
