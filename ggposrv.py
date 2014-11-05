@@ -1387,7 +1387,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		#quarks = len(self.server.quarks)
 		quarks=0
 		for quark in self.server.quarks.values():
-			if quark.p1!=None and quark.p2!=None:
+			if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None:
 				quarks=quarks+1
 
 		if quarks==0:
