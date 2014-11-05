@@ -1515,10 +1515,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					if (quarkobject.p2client!=None):
 						quarkobject.p2client.send_queue.append(response)
 
-				if quarkobject.p1==self and self.quark!=None:
+				if quarkobject.p1==self and self.quark!=None and quarkobject.p2!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
 					quarkobject.p2.request.close()
-				if quarkobject.p2==self and self.quark!=None:
+				if quarkobject.p2==self and self.quark!=None and quarkobject.p1!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p1.client_ident()))
 					quarkobject.p1.request.close()
 
