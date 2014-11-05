@@ -1373,8 +1373,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def dynamic_motd(self, channel):
 		motd=''
 
-#		if channel=="ssf2t":
-#			motd+="Visit http://www.strevival.com\n\n"
+		if channel=="ssf2t":
+			motd+="-!- http://www.strevival.com\n"
+			motd+="-!- http://wiki.shoryuken.com/Super_Street_Fighter_2_Turbo\n\n"
+
+		if channel=="wjammers":
+			motd+="-!- Windjammers French community: http://windjammers.forumactif.org/\n\n"
 
 		motd+='-!- FightCade server version '+str(VERSION)+'\n'
 
