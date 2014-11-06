@@ -709,7 +709,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if peer==self:
 			logging.info('[%s] couldn\'t find peer: %s' % (self.client_ident() , peer.client_ident()))
 		else:
-			logging.info('[%s] found peer: %s' % (self.client_ident() , peer.client_ident()))
+			logging.info('[%s] found peer: %s [my fbaport: %d ; peer fbaport: %d]' % (self.client_ident() , peer.client_ident(), self.fbaport, peer.fbaport))
 
 		myself=self.get_myclient_from_quark(quark)
 		self.side=myself.side
