@@ -227,10 +227,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if (response.subdivisions.most_specific.name=="Barcelona" or
 			    response.subdivisions.most_specific.name=="Tarragona" or
 			    response.subdivisions.most_specific.name=="Lleida" or
-			    response.subdivisions.most_specific.name=="Lérida" or
-			    response.subdivisions.most_specific.name=="Girona" or
-			    response.subdivisions.most_specific.name=="Gerona"):
-				iso_code="catalonia"
+			    response.subdivisions.most_specific.name=="Girona"):
+				iso_code="Catalonia"
 				country="Catalonia"
 		except:
 			pass
