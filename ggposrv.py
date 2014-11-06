@@ -1515,7 +1515,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 					# broadcast the quark id for replays
 					nick="System"
-					msg = "Quark id: "+str(quarkobject.quark)
+					msg = "To replay your match, type /replay "+str(quarkobject.quark)
 					negseq=4294967294 #'\xff\xff\xff\xfe'
 					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
 					logging.debug('to %s: %r' % (self.client_ident(), response))
