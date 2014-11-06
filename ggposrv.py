@@ -1118,14 +1118,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			clone = self.get_client_from_nick(nick)
 			if clone != self:
 				logging.info("[%s] someone else is using the nick: %s (%s)" % (self.client_ident(), nick, clone.client_ident()))
-				#self.server.clients.pop(nick)
+				self.server.clients.pop(nick)
 				# remove the clone from channel
 				channel = self.server.channels.get(clone.channel.name)
 				channel.clients.remove(clone)
 				clone.request.close()
-			else:
-				logging.info("[%s] someone else is using the nick: %s (%s -- clone==self)" % (self.client_ident(), nick, clone.client_ident()))
 				self.kick_client(sequence)
+				#self.request.close()
 				return()
 
 		logging.info("[%s] LOGIN OK. NICK: %s" % (self.client_ident(), nick))
@@ -1425,15 +1424,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		return motd
 
-	def handle_dump(self, params):
+	def handle_dump(self):
 		"""
 		Dump internal server information for debugging purposes.
 		"""
-		print "Clients:", self.server.clients
+		print "Clients:"
 		for client in self.server.clients.values():
 			print " ", client
 			print "     ", client.channel.name
-		print "Channels:", self.server.channels
+		print "Channels:"
 		for channel in self.server.channels.values():
 			print " ", channel.name, channel
 			for client in channel.clients:
