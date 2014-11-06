@@ -390,9 +390,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				params = nick,sequence
 
 			if (command!="savestate"):
-				logging.info('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
+				logging.info('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
 			else:
-				logging.debug('NICK: %s SEQUENCE: %d COMMAND: %s' % (self.nick,sequence,command))
+				logging.debug('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
 
 			try:
 				handler = getattr(self, 'handle_%s' % (command), None)
@@ -422,7 +422,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		return response
 
 	def handle(self):
-		logging.info('Client connected: %s' % (self.client_ident(), ))
+		logging.info('[%s] Client connected' % (self.client_ident(), ))
 
 		data=''
 		while True:
@@ -727,6 +727,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		myself=self.get_myclient_from_quark(quark)
 		self.side=myself.side
 		self.nick=myself.nick
+		self.channel=myself.channel
 
 		selfchallenge=False
 		if self.side==1 and quarkobject.p1==None:
@@ -877,7 +878,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0a')
-			logging.info('challenge NO_ACK to %s: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%r and self.channel=%r and self.channel.name=%r and channel=%r' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel ))
+			logging.info('[%s] challenge NO_ACK: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%r and self.channel=%r and self.channel.name=%r and channel=%r' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel ))
 			self.send_queue.append(response)
 
 	def handle_accept(self, params):
@@ -889,7 +890,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.host not in client.challenging:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0c')
-			logging.info('accept NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('[%s] accept NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return
 		else:
@@ -946,7 +947,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.host not in client.challenging:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0d')
-			logging.info('decline NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('[%s] decline NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return
 		else:
@@ -990,7 +991,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0b')
-			logging.info('watch NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('[%s] watch NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 
 	def handle_cancel(self, params):
@@ -1001,7 +1002,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if client.host not in self.challenging:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0e')
-			logging.info('cancel NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('[%s] cancel NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return
 		else:
@@ -1279,7 +1280,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if not channel_name in self.server.channels or self.nick==None:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x08')
-			logging.info('JOIN NO_ACK to %s: %r' % (self.client_ident(), response))
+			logging.info('[%s] JOIN NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return()
 
@@ -1439,14 +1440,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		Return the client identifier as included in many command replies.
 		"""
-		return('%s@%s:%s' % (self.nick, self.host[0], self.host[1]))
+		return('%s@%s:%s#%s/%s' % (self.nick, self.host[0], self.host[1], self.channel.name, self.clienttype))
 
 	def finish(self,response=None):
 		"""
 		The client conection is finished. Do some cleanup to ensure that the
 		client doesn't linger around in any channel or the client list.
 		"""
-		logging.info('Client disconnected: %s' % (self.client_ident()))
+		logging.info('[%s] Client disconnected' % (self.client_ident()))
 		if response == None:
 
 			negseq=4294967293 #'\xff\xff\xff\xfd'
@@ -1559,7 +1560,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.server.connections.pop(self.host)
 			logging.info("[%s] removing myself from server connections" % (self.client_ident()))
 
-		logging.info('Connection finished: %s' % (self.client_ident()))
+		logging.info('[%s] Connection finished' % (self.client_ident()))
 		self.request.close()
 
 	def __repr__(self):
