@@ -1118,7 +1118,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			clone = self.get_client_from_nick(nick)
 			if clone != self:
 				logging.info("[%s] someone else is using the nick: %s (%s)" % (self.client_ident(), nick, clone.client_ident()))
-				self.server.clients.pop(nick)
+				#self.server.clients.pop(nick)
 				# remove the clone from channel
 				channel = self.server.channels.get(clone.channel.name)
 				channel.clients.remove(clone)
