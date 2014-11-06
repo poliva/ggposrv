@@ -476,8 +476,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			client = self.server.connections[host]
 			if client.clienttype=="player" and client.quark==quark and client.host!=self.host:
 				return client
-
-		logging.info('[%s] WARNING: Could not find peer for quark: %s (returning self)' % (self.client_ident(), quark))
 		return self
 
 	def get_myclient_from_quark(self, quark):
@@ -502,8 +500,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			client = self.get_client_from_nick(nick)
 			if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
 				return client
-
-		logging.info('[%s] WARNING: Could not find my client for quark: %s (returning self)' % (self.client_ident(), quark))
 		return self
 
 
