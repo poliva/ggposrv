@@ -184,12 +184,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_queue.append(response)
 
 	def get_client_from_nick(self,nick):
+
 		clients = self.server.clients
 		for client_nick in clients:
 			if client_nick == nick:
 				return self.server.clients[nick]
+
+		clients = self.channel.clients
+		for client_nick in clients:
+			if client_nick == nick:
+				return self.channel.clients[nick]
+
+		for client in ggposerver.clients.values():
+			if client.nick==nick:
+				return client
+
 		# if not found, return self
-		logging.debug('[%s] Could not find client: %s' % (self.client_ident(), nick))
+		logging.info('[%s] WARNING: Could not find client: %s (returning self)' % (self.client_ident(), nick))
 		return self
 
 	def check_quark_format(self,quark):
@@ -467,6 +478,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			client = self.server.connections[host]
 			if client.clienttype=="player" and client.quark==quark and client.host!=self.host:
 				return client
+
+		logging.info('[%s] WARNING: Could not find peer for quark: %s (returning self)' % (self.client_ident(), quark))
 		return self
 
 	def get_myclient_from_quark(self, quark):
@@ -491,6 +504,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			client = self.get_client_from_nick(nick)
 			if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
 				return client
+
+		logging.info('[%s] WARNING: Could not find my client for quark: %s (returning self)' % (self.client_ident(), quark))
 		return self
 
 
