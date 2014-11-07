@@ -852,7 +852,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client = self.get_client_from_nick(nick)
 
 		# check that user is connected, in available state and in the same channel, and we're not playing
-		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2):
+		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick):
 
 			# send ACK to the initiator of the challenge request
 			self.send_ack(sequence)
