@@ -744,7 +744,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		if holepunch:
+		if holepunch and int(self.host[1])<6009 and int(peer.host[1])<6009:
 			# when UDP hole punching is enabled clients must use the udp proxy wrapper
 			pdu=self.sizepad("127.0.0.1")
 			if selfchallenge:
@@ -752,6 +752,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				pdu+=self.pad2hex(7001)
 		else:
+			if holepunch:
+				# if we can't do nat traversal with holepunch, try to use open ports instead
+				logging.info('[%s] WARNING: not using holepunch with %s on quark %s' % (self.client_ident(), peer.client_ident(), quark))
 			pdu=self.sizepad(peer.host[0])
 			pdu+=self.pad2hex(peer.fbaport)
 		if self.side==1:
