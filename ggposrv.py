@@ -59,7 +59,7 @@ try:
 except:
 	pass
 
-VERSION=0.8
+VERSION=0.9
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
@@ -111,7 +111,7 @@ class GGPOChannel(object):
 	"""
 	Object representing an GGPO channel.
 	"""
-	def __init__(self, name, rom, topic, motd='Welcome to FightCade server.\nThis is still very beta, some things might not work as expected.\nFeel free to report any issues to @pof\n\n'):
+	def __init__(self, name, rom, topic, motd=''):
 		self.name = name
 		self.rom = rom
 		self.topic = topic
