@@ -1223,10 +1223,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		response = self.reply(negseq,pdu)
 
-		for client in self.channel.clients:
-			# Send message to all client in the channel
-			logging.debug('to %s: %r' % (client.client_ident(), response))
-			client.send_queue.append(response)
+		if self.clienttype=="client":
+			for client in self.channel.clients:
+				# Send message to all client in the channel
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
 
 	def handle_users(self, params):
 
