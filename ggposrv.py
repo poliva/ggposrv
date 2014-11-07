@@ -1394,13 +1394,25 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def dynamic_motd(self, channel):
 		motd=''
 
-		if channel=="ssf2t":
-			motd+="-!- http://www.strevival.com\n"
-			motd+="-!- http://wiki.shoryuken.com/Super_Street_Fighter_2_Turbo\n\n"
+		# generic motd
+		motdfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'motd', 'motd.txt')
+		if os.path.exists(motdfile):
+			f=open(motdfile, 'r')
+			for line in f.readlines():
+				motd+=line
+			f.close()
+			motd+='\n'
 
-		if channel=="wjammers":
-			motd+="-!- Windjammers French community: http://windjammers.forumactif.org/\n\n"
+		# channel specific motd
+		motdfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'motd', channel+'.txt')
+		if os.path.exists(motdfile):
+			f=open(motdfile, 'r')
+			for line in f.readlines():
+				motd+=line
+			f.close()
+			motd+='\n'
 
+		# dynamic motd
 		motd+='-!- FightCade server version '+str(VERSION)+'\n'
 
 		clients = len(self.server.clients)
