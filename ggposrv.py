@@ -64,7 +64,7 @@ VERSION=0.8
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
 	def print_dump(self):
-		msg="Clients:"+str(ggposerver.clients)+"\n"
+		msg="Clients:\n"
 		for client in ggposerver.clients.values():
 			msg+= " "+str(client)+"\n"
 			msg+="     "+str(client.nick)+"\n"
@@ -72,20 +72,18 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 			msg+="     "+str(client.status)+"\n"
 			msg+="     "+str(client.channel.name)+"\n"
 
-		msg+="Channels:"+str(ggposerver.channels)+"\n"
+		msg+="Channels\n"
 		for channel in ggposerver.channels.values():
 			msg+=" "+str(channel.name)+" "+str(channel)+"\n"
 			for client in channel.clients:
 				msg+="     "+str(client.nick)+" "+str(client)+"\n"
 
-		msg+="Quarks:"+str(ggposerver.quarks)+"\n"
+		msg+="Quarks:\n"
 		for quark in ggposerver.quarks.values():
-			msg+= " "+str(quark)+"\n"
-			msg+="     "+str(quark.quark)+"\n"
-			if quark.p1!=None and quark.p1client!=None:
-				msg+="         P1: "+str(quark.p1.nick)+" / "+str(quark.p1client.nick)+"\n"
-			if quark.p2!=None and quark.p2client!=None:
-				msg+="         P2: "+str(quark.p2.nick)+" / "+str(quark.p2client.nick)+"\n"
+			if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None and quark.channel!=None:
+				msg+= " "+str(quark)+"\n"
+				msg+="     "+str(quark.quark)+" @ "+str(quark.channel.name)+"\n"
+				msg+="         "+str(quark.p1.nick)+" vs "+str(quark.p2.nick)+"\n"
 
 		self.wfile.write(msg)
 
@@ -132,6 +130,7 @@ class GGPOQuark(object):
 		self.p2client = None
 		self.spectators = set()
 		self.recorded = False
+		self.channel = None
 
 class GGPOClient(SocketServer.BaseRequestHandler):
 	"""
@@ -724,6 +723,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.side=myself.side
 		self.nick=myself.nick
 		self.channel=myself.channel
+		quarkobject.channel=myself.channel
 
 		selfchallenge=False
 		if self.side==1 and quarkobject.p1==None:
