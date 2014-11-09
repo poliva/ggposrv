@@ -73,7 +73,7 @@ def start_fba(args):
 
 def udp_proxy(args,q):
 
-	master = ("ggpo-ng.com", 7000)
+	master = ("fightcade.com", 7000)
 	l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	try:
 		port=7001
