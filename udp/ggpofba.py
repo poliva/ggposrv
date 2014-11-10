@@ -91,6 +91,12 @@ def udp_proxy(args,q):
 	q.put(fba_pid)
 
 	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+	# bind the socket to a port, so we can test the user's NAT type
+	try:
+		sockfd.bind(("0.0.0.0", 21112))
+	except socket.error:
+		sockfd.bind(("0.0.0.0", 21113))
+
 	sockfd.sendto( quark, master )
 	data, addr = sockfd.recvfrom( len(quark)+3 )
 	if data != "ok "+quark:
