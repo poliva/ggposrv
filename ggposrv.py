@@ -90,11 +90,11 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 			for quark in ggposerver.quarks.values():
 				if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None and quark.channel!=None:
 					game={}
-					game["quark"]=quark.quark
 					game["channel"]=quark.channel.name
 					game["p1"]=quark.p1.nick
 					game["p2"]=quark.p2.nick
 					game["spectators"]=len(quark.spectators)
+					out[quark.quark]=game
 
 		res = json.dumps(out);
 		self.wfile.write(res)
