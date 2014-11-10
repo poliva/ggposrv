@@ -570,6 +570,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			f=open(quarkfile, 'w')
 			f.write(quarkobject.p1.nick+"\n")
 			f.write(quarkobject.p2.nick+"\n")
+			f.write(quarkobject.channel.name+"\n")
 			f.close()
 
 
