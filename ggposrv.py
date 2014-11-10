@@ -50,6 +50,7 @@ import random
 import hmac
 import hashlib
 import sqlite3
+import json
 from threading import Thread
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 try:
@@ -64,28 +65,40 @@ VERSION=0.9
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
 	def print_dump(self):
-		msg="Clients:\n"
-		for client in ggposerver.clients.values():
-			msg+= " "+str(client)+"\n"
-			msg+="     "+str(client.nick)+"\n"
-			msg+="     "+str(client.clienttype)+"\n"
-			msg+="     "+str(client.status)+"\n"
-			msg+="     "+str(client.channel.name)+"\n"
 
-		msg+="Channels\n"
-		for channel in ggposerver.channels.values():
-			msg+=" "+str(channel.name)+" "+str(channel)+"\n"
-			for client in channel.clients:
-				msg+="     "+str(client.nick)+" "+str(client)+"\n"
+		path = self.path
+		out={}
 
-		msg+="Quarks:\n"
-		for quark in ggposerver.quarks.values():
-			if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None and quark.channel!=None:
-				msg+= " "+str(quark)+"\n"
-				msg+="     "+str(quark.quark)+" @ "+str(quark.channel.name)+"\n"
-				msg+="         "+str(quark.p1.nick)+" vs "+str(quark.p2.nick)+"\n"
+		if path == "/channels":
+			for channel in ggposerver.channels.values():
+				out[channel.name]=[]
+				for client in channel.clients:
+					out[channel.name].append(client.nick)
 
-		self.wfile.write(msg)
+		if path == "/clients":
+			for client in ggposerver.clients.values():
+				cli={}
+				cli["status"]=client.status
+				cli["channel"]=client.channel.name
+				cli["quark"]=client.quark
+				cli["city"]=client.city
+				cli["country"]=client.country
+				cli["cc"]=client.cc
+				out[client.nick]=cli
+
+		if path == "/games":
+			for quark in ggposerver.quarks.values():
+				if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None and quark.channel!=None:
+					game={}
+					game["quark"]=quark.quark
+					game["channel"]=quark.channel.name
+					game["p1"]=quark.p1.nick
+					game["p2"]=quark.p2.nick
+					game["spectators"]=len(quark.spectators)
+
+		res = json.dumps(out);
+		self.wfile.write(res)
+
 
 	#Handler for the GET requests
 	def do_GET(self):
