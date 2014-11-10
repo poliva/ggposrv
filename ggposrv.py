@@ -656,7 +656,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			time.sleep(1)
 			f=open(quarkfile)
-			response = f.read(376)
+			response = f.read(512)
 			while (response):
 				time.sleep(0.9)
 				try:
@@ -666,7 +666,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					logging.debug('[%s]: spectator disconnected from broadcast' % (self.client_ident()))
 					break
 
-				response = f.read(376)
+				response = f.read(512)
 			f.close()
 			self.request.close()
 			return()
