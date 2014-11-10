@@ -563,7 +563,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				except:
 					pass
 				f=open(quarkfile, 'wb')
-				f.write(zlib.compress(response))
+				f.write(response)
 				f.close()
 			# store player nicknames
 			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-nicknames.txt')
@@ -602,7 +602,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				except:
 					pass
 			f=open(quarkfile, 'ab')
-			f.write(zlib.compress(response))
+			f.write(response)
 			f.close()
 
 	def handle_getnicks(self, params):
@@ -644,7 +644,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			time.sleep(1)
 			f=open(quarkfile, 'rb')
-			response = zlib.decompress(f.read())
+			response = f.read()
 			f.close()
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 			self.request.send(response)
@@ -655,19 +655,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				return()
 
 			time.sleep(1)
-			d = zlib.decompressobj(16+zlib.MAX_WBITS)
 			f=open(quarkfile)
-			response = f.read(512)
+			response = f.read(376)
 			while (response):
 				time.sleep(0.9)
 				try:
 					logging.debug('to %s: %r' % (self.client_ident(), response))
-					self.request.send(d.decompress(response))
+					self.request.send(response)
 				except:
 					logging.debug('[%s]: spectator disconnected from broadcast' % (self.client_ident()))
 					break
 
-				response = f.read(512)
+				response = f.read(376)
 			f.close()
 			self.request.close()
 			return()
