@@ -51,6 +51,7 @@ import hmac
 import hashlib
 import sqlite3
 import json
+import gzip
 from threading import Thread
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 try:
@@ -591,7 +592,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				logging.debug('to %s: %r' % (client.client_ident(), response))
 				client.send_queue.append(response)
 
-		# TODO: see if using zlib has any benefit here
 		# record match for future broadcast
 		quarkobject = self.server.quarks[quark]
 		if self.check_quark_format(quark) and quarkobject.recorded == True:
@@ -652,13 +652,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs')
 			if not os.path.exists(quarkfile):
-				return()
+				quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs.gz')
+				if not os.path.exists(quarkfile):
+					return()
 
 			time.sleep(1)
-			f=open(quarkfile)
+
+			if quarkfile.endswith(".gz"):
+				f=gzip.open(quarkfile)
+			else:
+				f=open(quarkfile)
+
 			response = f.read(512)
 			while (response):
-				time.sleep(0.9)
+				time.sleep(0.8)
 				try:
 					logging.debug('to %s: %r' % (self.client_ident(), response))
 					self.request.send(response)
@@ -1566,8 +1573,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
 					self.server.quarks.pop(self.quark)
 
-					# broadcast the quark id for replays
+					# compress replay data
 					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-savestate.fs')
+					gz_quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-savestate.fs.gz')
+					if not os.path.exists(gz_quarkfile) and os.path.exists(quarkfile):
+						logging.info("[%s] compressing replay data for quark %s" % (self.client_ident(), self.quark))
+						f_out = gzip.open(gz_quarkfile, 'wb')
+						f_in = open(quarkfile, 'rb')
+						f_out.writelines(f_in)
+						f_out.close()
+						f_in.close()
+						try:
+							os.unlink(quarkfile)
+						except:
+							pass
+
+					# broadcast the quark id for replays
+					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-nicknames.txt')
 					if os.path.exists(quarkfile):
 						nick="System"
 						msg = "To replay your match, type /replay "+str(quarkobject.quark)
