@@ -1567,15 +1567,17 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					self.server.quarks.pop(self.quark)
 
 					# broadcast the quark id for replays
-					nick="System"
-					msg = "To replay your match, type /replay "+str(quarkobject.quark)
-					negseq=4294967294 #'\xff\xff\xff\xfe'
-					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
-					logging.debug('to %s: %r' % (self.client_ident(), response))
-					if (quarkobject.p1client!=None):
-						quarkobject.p1client.send_queue.append(response)
-					if (quarkobject.p2client!=None):
-						quarkobject.p2client.send_queue.append(response)
+					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-savestate.fs')
+					if os.path.exists(quarkfile):
+						nick="System"
+						msg = "To replay your match, type /replay "+str(quarkobject.quark)
+						negseq=4294967294 #'\xff\xff\xff\xfe'
+						response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
+						logging.debug('to %s: %r' % (self.client_ident(), response))
+						if (quarkobject.p1client!=None):
+							quarkobject.p1client.send_queue.append(response)
+						if (quarkobject.p2client!=None):
+							quarkobject.p2client.send_queue.append(response)
 
 				if quarkobject.p1==self and self.quark!=None and quarkobject.p2!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
