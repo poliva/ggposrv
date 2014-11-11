@@ -197,12 +197,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 	def get_client_from_nick(self,nick):
 
-		clients = self.server.clients
+		clients = dict(self.server.clients)
 		for client_nick in clients:
 			if client_nick == nick:
 				return self.server.clients[nick]
 
-		clients = self.channel.clients
+		clients = dict(self.channel.clients)
 		for client_nick in clients:
 			if client_nick == nick:
 				return self.channel.clients[nick]
@@ -483,7 +483,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		Returns a GGPOClient object representing our FBA peer's ggpofba connection, or self if not found
 		"""
-		connections = self.server.connections
+		connections = dict(self.server.connections)
 		for host in connections:
 			client = self.server.connections[host]
 			if client.clienttype=="player" and client.quark==quark and client.host!=self.host:
@@ -507,7 +507,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		except KeyError:
 			pass
 
-		clients = self.server.clients
+		clients = dict(self.server.clients)
 		for nick in clients:
 			client = self.get_client_from_nick(nick)
 			if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
@@ -544,7 +544,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=gamebuf
 		response = self.reply(negseq,pdu)
 
-		connections = self.server.connections
+		connections = dict(self.server.connections)
 		for host in connections:
 			client = self.server.connections[host]
 			if client.clienttype=="spectator" and client.quark==quark and client.side==0:
@@ -584,7 +584,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=block2+block1+gamebuf
 		response = self.reply(negseq,pdu)
 
-		connections = self.server.connections
+		connections = dict(self.server.connections)
 		for host in connections:
 			client = self.server.connections[host]
 			if client.clienttype=="spectator" and client.quark==quark and client.side==3:
