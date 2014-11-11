@@ -1370,14 +1370,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					client.send_queue.append(response)
 			return
 
-		timestamp = int(time.time())
-		if (timestamp-self.lastmsg < 2):
+		timestamp = time.time()
+		if (timestamp-self.lastmsg < 0.70):
 			nick="System"
 			msg="Please do not spam"
 			negseq=4294967294 #'\xff\xff\xff\xfe'
 			response = self.reply(negseq,self.sizepad(nick)+self.sizepad(msg))
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
+			self.lastmsg = timestamp
 			return
 
 		self.lastmsg = timestamp

@@ -1,4 +1,3 @@
-* increment anti-spam timeout
 * compress game replay data (zlib?)
 * try to obtain a .fr file suitable for FBA replays from our game replay data
 * do not allow to connect to old client versions, always force a minimum version number
