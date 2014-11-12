@@ -619,6 +619,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			f=open(quarkfile, 'r')
 			nicknames = [x.strip('\n') for x in f.readlines()]
 			f.close()
+			channel=nicknames[2]
 
 			pdu='\x00\x00\x00\x00'
 			pdu+=self.sizepad(nicknames[0])
@@ -658,7 +659,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				f=open(quarkfile)
 
-			response = f.read(512)
+			CHUNKSIZE=512
+			if channel=='kof98':
+				CHUNKSIZE=1024
+
+			response = f.read(CHUNKSIZE)
 			while (response):
 				time.sleep(0.8)
 				try:
@@ -668,7 +673,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					logging.debug('[%s]: spectator disconnected from broadcast' % (self.client_ident()))
 					break
 
-				response = f.read(512)
+				response = f.read(CHUNKSIZE)
 			f.close()
 			self.request.close()
 			return()
