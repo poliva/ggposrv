@@ -695,7 +695,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+='\x00\x00\x00\x00'
 
 		pdu+='\x00\x00\x00\x00'
-		pdu+=self.pad2hex(len(quarkobject.spectators))
+		if self.clienttype=="player":
+			pdu+=self.pad2hex(len(quarkobject.spectators))
+		else:
+			pdu+=self.pad2hex(len(quarkobject.spectators)+1)
 
 		response = self.reply(sequence,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
