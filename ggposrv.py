@@ -701,14 +701,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
-		# call auto_spectate() to record the game
-		logging.debug('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
-		self.auto_spectate(quark)
+		if self.clienttype=="player":
+			# call auto_spectate() to record the game
+			logging.debug('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
+			self.auto_spectate(quark)
 
-		# announce the match to the public
-		myself=self.get_myclient_from_quark(quark)
-		params = 2,0
-		myself.handle_status(params)
+			# announce the match to the public
+			myself=self.get_myclient_from_quark(quark)
+			params = 2,0
+			myself.handle_status(params)
 
 	def handle_getpeer(self, params):
 		quark, fbaport, sequence = params
