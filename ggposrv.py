@@ -660,7 +660,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				f=open(quarkfile)
 
 			CHUNKSIZE=512
-			if channel=='kof98':
+			if channel in ('kof98', 'ms5plus'):
 				CHUNKSIZE=1024
 
 			response = f.read(CHUNKSIZE)
