@@ -203,14 +203,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if client_nick == nick:
 				return self.server.clients[nick]
 
-		clients = dict(self.channel.clients)
-		for client_nick in clients:
+		for client_nick in self.channel.clients:
 			if client_nick == nick:
 				return self.channel.clients[nick]
-
-		for client in ggposerver.clients.values():
-			if client.nick==nick:
-				return client
 
 		# if not found, return self
 		logging.info('[%s] WARNING: Could not find client: %s (returning self)' % (self.client_ident(), nick))
