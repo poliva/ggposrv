@@ -22,6 +22,7 @@ import struct
 import threading
 import Queue
 import time
+import traceback
 
 def bytes2addr( bytes ):
 	"""Convert a hash to an address pair."""
@@ -173,4 +174,9 @@ def main():
 		start_fba(args)
 
 if __name__ == "__main__":
-	main()
+
+	try:
+		main()
+	except:
+		traceback.print_exc(file=open("ggpofba-errors.log","a"))
+		sys.exit(1)
