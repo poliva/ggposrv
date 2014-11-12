@@ -61,7 +61,7 @@ try:
 except:
 	pass
 
-VERSION=0.9
+VERSION=0.10
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
