@@ -46,6 +46,7 @@ import select
 import re
 import struct
 import time
+import datetime
 import random
 import hmac
 import hashlib
@@ -562,13 +563,36 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				f=open(quarkfile, 'wb')
 				f.write(response)
 				f.close()
+
 			# store player nicknames
-			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-nicknames.txt')
-			f=open(quarkfile, 'w')
-			f.write(quarkobject.p1.nick+"\n")
-			f.write(quarkobject.p2.nick+"\n")
-			f.write(quarkobject.channel.name+"\n")
-			f.close()
+			createdb=False
+			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'quarks.sqlite3')
+			if not os.path.exists(dbfile):
+				createdb=True
+				try:
+					os.mkdir(os.path.dirname(dbfile))
+				except:
+					pass
+
+			conn = sqlite3.connect(dbfile)
+			cursor = conn.cursor()
+
+			if createdb==True:
+				cursor.execute("""CREATE TABLE IF NOT EXISTS quarks (
+							id INTEGER PRIMARY KEY,
+							quark TEXT,
+							player1 TEXT,
+							player2 TEXT,
+							channel TEXT,
+							date TEXT);""")
+				cursor.execute("""CREATE UNIQUE INDEX quarks_quark_idx on quarks (quark);""")
+				logging.info("[%s] created empty quark database" % (self.client_ident()))
+
+			date = datetime.datetime.today().strftime("%d %b %Y %H:%M:%S")
+			sql = "INSERT INTO quarks (quark, player1, player2, channel, date) VALUES (?,?,?,?,?)"
+			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date])
+			conn.commit()
+			conn.close()
 
 
 	def handle_savestate(self, params):
@@ -613,18 +637,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if not self.check_quark_format(quark):
 				return()
 
-			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-nicknames.txt')
-			if not os.path.exists(quarkfile):
+			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'quarks.sqlite3')
+			if not os.path.exists(dbfile):
 				return()
 
-			f=open(quarkfile, 'r')
-			nicknames = [x.strip('\n') for x in f.readlines()]
-			f.close()
-			channel=nicknames[2]
+			conn = sqlite3.connect(dbfile)
+			cursor = conn.cursor()
+			sql = "SELECT player1, player2, channel FROM quarks WHERE quark=?"
+			cursor.execute(sql, [(quark)])
+			player1,player2,channel=cursor.fetchone()
+			conn.close()
 
 			pdu='\x00\x00\x00\x00'
-			pdu+=self.sizepad(nicknames[0])
-			pdu+=self.sizepad(nicknames[1])
+			pdu+=self.sizepad(player1)
+			pdu+=self.sizepad(player2)
 			pdu+='\x00\x00\x00\x00'
 			pdu+=self.pad2hex(0)
 
@@ -1121,6 +1147,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# db is empty, kick the user
 			logging.info("[%s] created empty user database" % (self.client_ident()))
 			self.kick_client(sequence)
+			conn.commit()
+			conn.close()
 			return
 
 		# fetch the user's salt
@@ -1131,6 +1159,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# user doesn't exist into database
 			logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
 			self.kick_client(sequence)
+			conn.close()
 			return
 
 		# compute the hashed password
@@ -1139,6 +1168,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		sql = "SELECT COUNT(username) FROM users WHERE password=? AND username=?"
 		cursor.execute(sql, [(h_password),(nick)])
 		result = cursor.fetchone()
+		conn.close()
 		if (result[0] != 1):
 			# wrong password
 			logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
@@ -1591,7 +1621,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							pass
 
 					# broadcast the quark id for replays
-					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-nicknames.txt')
+					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-gamebuffer.fs')
 					if os.path.exists(quarkfile):
 						nick="System"
 						msg = "To replay your match, type /replay "+str(quarkobject.quark)
