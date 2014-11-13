@@ -648,7 +648,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			player1,player2,channel=cursor.fetchone()
 			conn.close()
 
-			if channel='':
+			if channel=='':
 				channel="lobby"
 
 			pdu='\x00\x00\x00\x00'
