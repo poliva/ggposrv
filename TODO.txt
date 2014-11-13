@@ -4,8 +4,3 @@
 * a user should be able to be idling & challenged in more than one channel at a time
 * add SSL support on login
 * store quark-id, game name & player nicks in a sqlite3 db instead of txt file, and make a web front-end
-
-Laggy replay:
-17:43 <Gouki.mst> svcplus: /replay challenge-3786-1415658833.85
-17:43 <Gouki.mst> ms5plus: /replay challenge-1003-1415753076.14
-17:43 <Gouki.mst> kof2001: /replay challenge-6959-1415506194.34

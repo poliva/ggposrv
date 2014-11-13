@@ -125,11 +125,12 @@ class GGPOChannel(object):
 	"""
 	Object representing an GGPO channel.
 	"""
-	def __init__(self, name, rom, topic, motd=''):
+	def __init__(self, name, rom, topic, motd='', chunksize=512):
 		self.name = name
 		self.rom = rom
 		self.topic = topic
 		self.motd = motd
+		self.chunksize = 512
 		self.clients = set()
 
 class GGPOQuark(object):
@@ -659,10 +660,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				f=open(quarkfile)
 
-			CHUNKSIZE=512
-			if channel in ('kof98', 'ms5plus'):
-				CHUNKSIZE=1024
-
+			CHUNKSIZE=self.server.channels[channel].chunksize
 			response = f.read(CHUNKSIZE)
 			while (response):
 				time.sleep(0.8)
@@ -1714,7 +1712,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['knights']=GGPOChannel("knights", "knights", 'Knights of the Round (911127 etc)')
 		self.channels['kod']=GGPOChannel("kod", "kod", 'King of Dragons (910711 etc)')
 		self.channels['kof2000']=GGPOChannel("kof2000", "kof2000", 'King of Fighters 2000')
-		self.channels['kof2001']=GGPOChannel("kof2001", "kof2001", 'King of Fighters 2001 (set 1)')
+		self.channels['kof2001']=GGPOChannel("kof2001", "kof2001", 'King of Fighters 2001 (set 1)', '', 1024)
 		self.channels['kof2002']=GGPOChannel("kof2002", "kof2002", 'King of Fighters 2002 - challenge to ultimate battle')
 		self.channels['kof2003']=GGPOChannel("kof2003", "kof2003", 'King of Fighters 2003 (MVS)')
 		self.channels['kof94']=GGPOChannel("kof94", "kof94", "King of Fighters '94")
@@ -1724,7 +1722,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		#self.channels['kof98-2']=GGPOChannel("kof98-2", "kof98", "King of Fighters '98 (Room 2)")
 		#self.channels['kof98-3']=GGPOChannel("kof98-3", "kof98", "King of Fighters '98 (Room 3)")
 		#self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters '98 (Room 1)")
-		self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters '98")
+		self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters '98", '', 1024)
 		self.channels['kof99']=GGPOChannel("kof99", "kof99", "King of Fighters '99 - millennium battle (set 1)")
 		self.channels['kotm2']=GGPOChannel("kotm2", "kotm2", 'King of the Monsters 2 - the next thing')
 		self.channels['kotm']=GGPOChannel("kotm", "kotm", 'King of the Monsters (set 1)')
@@ -1742,7 +1740,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['mmancp2u']=GGPOChannel("mmancp2u", "mmancp2u", 'Mega Man - The Power Battle (951006 USA, SAMPLE Version)')
 		self.channels['mmatrix']=GGPOChannel("mmatrix", "mmatrix", 'Mars Matrix (000412 USA)')
 		self.channels['mpang']=GGPOChannel("mpang", "mpang", 'Mighty! Pang (001010 USA)')
-		self.channels['ms5plus']=GGPOChannel("ms5plus", "ms5plus", 'Metal Slug 5 Plus (bootleg)')
+		self.channels['ms5plus']=GGPOChannel("ms5plus", "ms5plus", 'Metal Slug 5 Plus (bootleg)', '', 1024)
 		self.channels['msh']=GGPOChannel("msh", "msh", 'Marvel Super Heroes (951024 Euro)')
 		self.channels['mshvsf']=GGPOChannel("mshvsf", "mshvsf", 'Marvel Super Heroes vs Street Fighter (970625 Euro)')
 		self.channels['mslug2']=GGPOChannel("mslug2", "mslug2", 'Metal Slug 2 - super vehicle-001/II')
@@ -1825,7 +1823,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['ssideki']=GGPOChannel("ssideki", "ssideki", 'Super Sidekicks')
 		self.channels['strhoop']=GGPOChannel("strhoop", "strhoop", 'Street Hoop')
 		self.channels['strider']=GGPOChannel("strider", "strider", 'Strider (US set 1)')
-		self.channels['svcplus']=GGPOChannel("svcplus", "svcplus", 'SvC Chaos - SNK vs Capcom Plus (bootleg, set 1)')
+		self.channels['svcplus']=GGPOChannel("svcplus", "svcplus", 'SvC Chaos - SNK vs Capcom Plus (bootleg, set 1)', '', 1024)
 		self.channels['theroes']=GGPOChannel("theroes", "theroes", 'Thunder Heroes')
 		self.channels['tophuntr']=GGPOChannel("tophuntr", "tophuntr", 'Top Hunter - Roddy & Cathy (set 1)')
 		self.channels['turfmast']=GGPOChannel("turfmast", "turfmast", 'Neo Turf Masters')
