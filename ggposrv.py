@@ -648,6 +648,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			player1,player2,channel=cursor.fetchone()
 			conn.close()
 
+			if channel='':
+				channel="lobby"
+
 			pdu='\x00\x00\x00\x00'
 			pdu+=self.sizepad(player1)
 			pdu+=self.sizepad(player2)
@@ -1759,7 +1762,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['lastblad']=GGPOChannel("lastblad", "lastblad", 'Last Blade (set 1)')
 		self.channels['lastbld2']=GGPOChannel("lastbld2", "lastbld2", 'Last Blade 2')
 		self.channels['lbowling']=GGPOChannel("lbowling", "lbowling", 'League Bowling')
-		self.channels['lobby']=GGPOChannel("lobby", '', "The Lobby")
+		self.channels['lobby']=GGPOChannel("lobby", '', "The Lobby", '', 768)
 		self.channels['lresort']=GGPOChannel("lresort", "lresort", 'Last Resort')
 		self.channels['magdrop2']=GGPOChannel("magdrop2", "magdrop2", 'Magical Drop II')
 		self.channels['magdrop3']=GGPOChannel("magdrop3", "magdrop3", 'Magical Drop III')
