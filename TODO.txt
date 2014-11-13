@@ -4,3 +4,5 @@
 * a user should be able to be idling & challenged in more than one channel at a time
 * add SSL support on login
 * make a player profile web front-end with replay id's
+	- setting for public/private replays
+	- setting to turn off city geo-location (display only country)
