@@ -1204,35 +1204,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
 
-		negseq=4294967293 #'\xff\xff\xff\xfd'
-		pdu='\x00\x00\x00\x02'
-		pdu+='\x00\x00\x00\x01'
-		pdu+=self.sizepad(self.nick)
-		pdu+=self.pad2hex(self.status) #status
-		pdu+='\x00\x00\x00\x00' #p2(?)
-		pdu+=self.sizepad(str(self.host[0]))
-		pdu+='\x00\x00\x00\x00' #unk1
-		pdu+='\x00\x00\x00\x00' #unk2
-		pdu+=self.sizepad(self.city)
-		pdu+=self.sizepad(self.cc)
-		pdu+=self.sizepad(self.country)
-		pdu+=self.pad2hex(self.port)      # port
-		pdu+='\x00\x00\x00\x01' # ?
-		pdu+=self.sizepad(nick)
-		pdu+=self.pad2hex(self.status) #status
-		pdu+='\x00\x00\x00\x00' #p2(?)
-		pdu+=self.sizepad(str(self.host[0]))
-		pdu+='\x00\x00\x00\x00' #unk1
-		pdu+='\x00\x00\x00\x00' #unk2
-		pdu+=self.sizepad(self.city)
-		pdu+=self.sizepad(self.cc)
-		pdu+=self.sizepad(self.country)
-		pdu+=self.pad2hex(self.port)      # port
-
-		response = self.reply(negseq,pdu)
-		logging.debug('to %s: %r' % (self.client_ident(), response))
-		self.send_queue.append(response)
-
 
 	def handle_status(self, params):
 
