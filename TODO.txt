@@ -3,4 +3,4 @@
 * detect nat traversal problem based the client's UDP port instead of TCP (needs updated ggpofba on the client)
 * a user should be able to be idling & challenged in more than one channel at a time
 * add SSL support on login
-* store quark-id, game name & player nicks in a sqlite3 db instead of txt file, and make a web front-end
+* make a player profile web front-end with replay id's
