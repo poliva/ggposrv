@@ -416,12 +416,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				response = handler(params)
 			except AttributeError, e:
 				raise e
-				logging.error('%s' % (e))
+				logging.error('[%s] ERROR %s' % (self.client_ident(), e))
 			except GGPOError, e:
-				response = ':%s %s %s' % (self.server.servername, e.code, e.value)
+				response = '[%s] ERROR %s %s' % (self.client_ident(), e.code, e.value)
 				logging.error('%s' % (response))
 			except Exception, e:
-				response = ':%s ERROR %s' % (self.server.servername, repr(e))
+				response = '[%s] ERROR %s' % (self.client_ident(), repr(e))
 				logging.error('%s' % (response))
 				raise
 
