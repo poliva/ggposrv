@@ -126,20 +126,20 @@ def udp_proxy(args,q):
 	sockfd.setblocking(0)
 
 	while True:
-
-		rfds,_,_ = select( [sockfd,l_sockfd], [], [], 0.1)
-		if l_sockfd in rfds:
-			emudata, emuaddr = l_sockfd.recvfrom(16384)
-			if emudata:
-				sockfd.sendto( emudata, target )
-		if sockfd in rfds:
-			peerdata, peeraddr = sockfd.recvfrom(16384)
-			if peerdata:
-				l_sockfd.sendto( peerdata, emuaddr )
-
-	sockfd.close()
-	l_sockfd.close()
-	os._exit(0)
+		try:
+			rfds,_,_ = select( [sockfd,l_sockfd], [], [], 0.1)
+			if l_sockfd in rfds:
+				emudata, emuaddr = l_sockfd.recvfrom(16384)
+				if emudata:
+					sockfd.sendto( emudata, target )
+			if sockfd in rfds:
+				peerdata, peeraddr = sockfd.recvfrom(16384)
+				if peerdata:
+					l_sockfd.sendto( peerdata, emuaddr )
+		except:
+			sockfd.close()
+			l_sockfd.close()
+			os._exit(0)
 
 def process_checker(q):
 
@@ -179,4 +179,4 @@ if __name__ == "__main__":
 		main()
 	except:
 		traceback.print_exc(file=open("ggpofba-errors.log","a"))
-		sys.exit(1)
+		os._exit(1)
