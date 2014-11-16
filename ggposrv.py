@@ -170,6 +170,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.country = "null"		# Client's country
 		self.cc = "null"		# Client's country code
 		self.lastmsg = 0		# timestamp of the last chat message
+		self.useports = False		# set to true when we have potential problems with NAT traversal
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
@@ -554,6 +555,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		quarkobject = self.server.quarks[quark]
 		if self.check_quark_format(quark) and quarkobject.recorded == False:
 			quarkobject.recorded=True
+
+			# match started successfully, reset useports on both clients:
+			quarkobject.p1client.useports=False
+			quarkobject.p2client.useports=False
+
+			# store initial savestate (gamebuffer)
 			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
 			if not os.path.exists(quarkfile):
 				try:
@@ -752,6 +759,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.fbaport=fbaport
 
 		quarkobject = self.server.quarks.setdefault(quark, GGPOQuark(quark))
+		myself=self.get_myclient_from_quark(quark)
+		self.side=myself.side
+		self.nick=myself.nick
+		self.useports=myself.useports
+		self.channel=myself.channel
+		quarkobject.channel=myself.channel
 
 		if quarkobject.p1!=None and quarkobject.p2!=None:
 			logging.info('[%s] getpeer in a full quark: go away' % (self.client_ident(), response))
@@ -771,12 +784,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			logging.info('[%s] found peer: %s [my fbaport: %d ; peer fbaport: %d]' % (self.client_ident() , peer.client_ident(), self.fbaport, peer.fbaport))
 
-		myself=self.get_myclient_from_quark(quark)
-		self.side=myself.side
-		self.nick=myself.nick
-		self.channel=myself.channel
-		quarkobject.channel=myself.channel
-
 		selfchallenge=False
 		if self.side==1 and quarkobject.p1==None:
 			quarkobject.p1=self
@@ -794,15 +801,19 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				quarkobject.p2client=myself
 			selfchallenge=True
 
-
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		if holepunch and int(self.host[1])<6009 and int(peer.host[1])<6009:
+		if holepunch and self.useports==False and peer.useports==False:
 			# when UDP hole punching is enabled clients must use the udp proxy wrapper
 			pdu=self.sizepad("127.0.0.1")
 			if selfchallenge:
 				pdu+=self.pad2hex(7002)
 			else:
 				pdu+=self.pad2hex(7001)
+
+			if int(self.host[1])>6009:
+				myself.useports=True
+				logging.info('[%s] using holepunch with %s on quark %s (and setting useports=True)' % (self.client_ident(), peer.client_ident(), quark))
+
 		else:
 			if holepunch:
 				# if we can't do nat traversal with holepunch, try to use open ports instead
