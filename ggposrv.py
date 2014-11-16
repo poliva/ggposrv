@@ -962,7 +962,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.send_queue.append(response)
 			return
 		else:
-			client.challenging.pop(self.host)
+			#client.challenging.pop(self.host)
+			client.challenging.clear()
+			self.challenging.clear()
 
 		#logging.debug('[%s] looking for nick: %s found %s' % (self.client_ident(), nick, client.nick))
 
