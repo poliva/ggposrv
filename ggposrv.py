@@ -1233,7 +1233,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+=self.sizepad(self.opponent)
 		else:
 			pdu+='\x00\x00\x00\x00'
-		pdu+=self.sizepad(str(self.host[0]))
+		#pdu+=self.sizepad(str(self.host[0]))
+		pdu+=self.sizepad("fightcade")
 		pdu+='\x00\x00\x00\x00' #unk1
 		pdu+='\x00\x00\x00\x00' #unk2
 		pdu+=self.sizepad(self.city)
