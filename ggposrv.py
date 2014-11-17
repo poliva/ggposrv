@@ -1308,8 +1308,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				pdu+=self.sizepad(client.opponent)
 			else:
 				pdu+='\x00\x00\x00\x00'
-
-			pdu+=self.sizepad(str(client.host[0]))
+			if client==self:
+				pdu+=self.sizepad("127.0.0.1")
+			else:
+				pdu+=self.sizepad(str(client.host[0]))
 			pdu+='\x00\x00\x00\x00' #unk1
 			pdu+='\x00\x00\x00\x00' #unk2
 			pdu+=self.sizepad(client.city)
