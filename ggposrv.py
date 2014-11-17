@@ -665,7 +665,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+=self.pad2hex(0)
 
 			response = self.reply(sequence,pdu)
-			time.sleep(2)
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 			self.request.send(response)
 
@@ -675,7 +674,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if not os.path.exists(quarkfile):
 				return()
 
-			time.sleep(1)
 			f=open(quarkfile, 'rb')
 			response = f.read()
 			f.close()
@@ -688,8 +686,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs.gz')
 				if not os.path.exists(quarkfile):
 					return()
-
-			time.sleep(1)
 
 			if quarkfile.endswith(".gz"):
 				f=gzip.open(quarkfile)
