@@ -1234,6 +1234,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			return
 
 		negseq=4294967293 #'\xff\xff\xff\xfd'
+		pdu2=''
 		pdu='\x00\x00\x00\x01'
 		pdu+='\x00\x00\x00\x01'
 		pdu+=self.sizepad(self.nick)
@@ -1242,10 +1243,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+=self.sizepad(self.opponent)
 		else:
 			pdu+='\x00\x00\x00\x00'
-		if self.nick=="Neithan" or self.nick=="SuperCaptainAce":
-			pdu+=self.sizepad("figtcade")
-		else:
-			pdu+=self.sizepad(str(self.host[0]))
+		pdu+=self.sizepad(str(self.host[0]))
 		pdu+='\x00\x00\x00\x00' #unk1
 		pdu+='\x00\x00\x00\x00' #unk2
 		pdu+=self.sizepad(self.city)
@@ -1254,25 +1252,46 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu+=self.pad2hex(self.port)      # port
 		if (self.opponent!=None):
 			client = self.get_client_from_nick(self.opponent)
-			pdu+='\x00\x00\x00\x01'
-			pdu+=self.sizepad(client.nick)
-			self.pad2hex(client.status)
-			pdu+=self.sizepad(client.opponent)
-			pdu+=self.sizepad(str(client.host[0]))
-			pdu+='\x00\x00\x00\x00' #unk1
-			pdu+='\x00\x00\x00\x00' #unk2
-			pdu+=self.sizepad(client.city)
-			pdu+=self.sizepad(client.cc)
-			pdu+=self.sizepad(client.country)
-			pdu+=self.pad2hex(client.port)      # port
+			pdu2+='\x00\x00\x00\x01'
+			pdu2+=self.sizepad(client.nick)
+			pdu2+=self.pad2hex(client.status)
+			pdu2+=self.sizepad(client.opponent)
+			pdu2+=self.sizepad(str(client.host[0]))
+			pdu2+='\x00\x00\x00\x00' #unk1
+			pdu2+='\x00\x00\x00\x00' #unk2
+			pdu2+=self.sizepad(client.city)
+			pdu2+=self.sizepad(client.cc)
+			pdu2+=self.sizepad(client.country)
+			pdu2+=self.pad2hex(client.port)      # port
 
-		response = self.reply(negseq,pdu)
+		response = self.reply(negseq,pdu+pdu2)
 
 		if self.clienttype=="client":
 			for client in self.channel.clients:
 				# Send message to all client in the channel
-				logging.debug('to %s: %r' % (client.client_ident(), response))
-				client.send_queue.append(response)
+				if client != self:
+					logging.debug('to %s: %r' % (client.client_ident(), response))
+					client.send_queue.append(response)
+				if client == self:
+					# fix for crappy routers that change their own public ip address to something else
+					pdu='\x00\x00\x00\x01'
+					pdu+='\x00\x00\x00\x01'
+					pdu+=self.sizepad(self.nick)
+					pdu+=self.pad2hex(self.status) #status
+					if (self.opponent!=None):
+						pdu+=self.sizepad(self.opponent)
+					else:
+						pdu+='\x00\x00\x00\x00'
+					pdu+=self.sizepad("127.0.0.1")
+					pdu+='\x00\x00\x00\x00' #unk1
+					pdu+='\x00\x00\x00\x00' #unk2
+					pdu+=self.sizepad(self.city)
+					pdu+=self.sizepad(self.cc)
+					pdu+=self.sizepad(self.country)
+					pdu+=self.pad2hex(self.port)      # port
+					response = self.reply(negseq,pdu+pdu2)
+					client.send_queue.append(response)
+
 
 	def handle_users(self, params):
 
@@ -1353,29 +1372,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('CONNECITON ESTABLISHED to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
-
-		negseq=4294967293 #'\xff\xff\xff\xfd'
-		pdu='\x00\x00\x00\x01'
-		pdu+='\x00\x00\x00\x01'
-		pdu+=self.sizepad(self.nick)
-		pdu+=self.pad2hex(self.status) #status
-		pdu+='\x00\x00\x00\x00' #p2(?)
-		if self.nick=="Neithan" or self.nick=="SuperCaptainAce":
-			pdu+=self.sizepad("figtcade")
-		else:
-			pdu+=self.sizepad(str(self.host[0]))
-		pdu+='\x00\x00\x00\x00' #unk1
-		pdu+='\x00\x00\x00\x00' #unk2
-		pdu+=self.sizepad(self.city)
-		pdu+=self.sizepad(self.cc)
-		pdu+=self.sizepad(self.country)
-		pdu+=self.pad2hex(self.port)      # port
-
-		response = self.reply(negseq,pdu)
-
-		for client in channel.clients:
-			client.send_queue.append(response)
-			logging.debug('CLIENT JOIN to %s: %r' % (client.client_ident(), response))
+		params = self.status,0
+		self.handle_status(params)
 
 	def handle_privmsg(self, params):
 		"""
