@@ -1364,7 +1364,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu+=self.sizepad(self.nick)
 		pdu+=self.pad2hex(self.status) #status
 		pdu+='\x00\x00\x00\x00' #p2(?)
-		pdu+=self.sizepad(str(self.host[0]))
+		if self.nick=="Neithan" or self.nick=="SuperCaptainAce":
+			pdu+=self.sizepad("figtcade")
+		else:
+			pdu+=self.sizepad(str(self.host[0]))
 		pdu+='\x00\x00\x00\x00' #unk1
 		pdu+='\x00\x00\x00\x00' #unk2
 		pdu+=self.sizepad(self.city)
