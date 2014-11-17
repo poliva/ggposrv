@@ -1272,25 +1272,25 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				if client != self:
 					logging.debug('to %s: %r' % (client.client_ident(), response))
 					client.send_queue.append(response)
-				if client == self:
-					# fix for crappy routers that change their own public ip address to something else
-					pdu='\x00\x00\x00\x01'
-					pdu+='\x00\x00\x00\x01'
-					pdu+=self.sizepad(self.nick)
-					pdu+=self.pad2hex(self.status) #status
-					if (self.opponent!=None):
-						pdu+=self.sizepad(self.opponent)
-					else:
-						pdu+='\x00\x00\x00\x00'
-					pdu+=self.sizepad("127.0.0.1")
-					pdu+='\x00\x00\x00\x00' #unk1
-					pdu+='\x00\x00\x00\x00' #unk2
-					pdu+=self.sizepad(self.city)
-					pdu+=self.sizepad(self.cc)
-					pdu+=self.sizepad(self.country)
-					pdu+=self.pad2hex(self.port)      # port
-					response = self.reply(negseq,pdu+pdu2)
-					client.send_queue.append(response)
+
+			# fix for crappy routers that change their own public ip address to something else
+			pdu='\x00\x00\x00\x01'
+			pdu+='\x00\x00\x00\x01'
+			pdu+=self.sizepad(self.nick)
+			pdu+=self.pad2hex(self.status) #status
+			if (self.opponent!=None):
+				pdu+=self.sizepad(self.opponent)
+			else:
+				pdu+='\x00\x00\x00\x00'
+			pdu+=self.sizepad("127.0.0.1")
+			pdu+='\x00\x00\x00\x00' #unk1
+			pdu+='\x00\x00\x00\x00' #unk2
+			pdu+=self.sizepad(self.city)
+			pdu+=self.sizepad(self.cc)
+			pdu+=self.sizepad(self.country)
+			pdu+=self.pad2hex(self.port)      # port
+			response = self.reply(negseq,pdu+pdu2)
+			self.send_queue.append(response)
 
 
 	def handle_users(self, params):
