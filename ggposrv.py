@@ -771,8 +771,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		while True:
 			i=i+1
 			peer=self.get_peer_from_quark(quark)
-			time.sleep(5)
-			if peer!=self or i>=10:
+			time.sleep(1)
+			if peer!=self or i>=50:
 				break
 
 		if peer==self:
