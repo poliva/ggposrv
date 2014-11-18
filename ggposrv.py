@@ -62,7 +62,9 @@ try:
 except:
 	pass
 
-VERSION="0.12"
+VERSION=12
+
+MIN_CLIENT_VERSION=0
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
@@ -1119,7 +1121,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		pdu+=self.sizepad(channel.name)
 		pdu+=self.sizepad(channel.topic)
-		pdu+=self.sizepad(channel.motd+self.dynamic_motd(channel.name))
+		if self.version >= MIN_CLIENT_VERSION:
+			pdu+=self.sizepad(channel.motd+self.dynamic_motd(channel.name))
+		else:
+			motd='<center>'
+			if self.version != 0:
+				motd+='You are using FightCade client version {0:.2f}'.format(self.version/100.0)+'\n'
+			motd+="*********************************************************\n"
+			motd+=" ERROR: YOUR VERSION OF FIGHTCADE CLIENT IS TOO OLD\n"
+			motd+=" ERROR: YOUR VERSION OF FIGHTCADE CLIENT IS TOO OLD\n"
+			motd+=" ERROR: YOUR VERSION OF FIGHTCADE CLIENT IS TOO OLD\n"
+			motd+="*********************************************************\n\n"
+			motd+="MINIMUM VERSION REQUIRED TO CONNECT IS: {0:.2f}".format(MIN_CLIENT_VERSION/100.0)+"\n\n"
+			motd+="PLEASE RE-DOWNLOAD LATEST VERSION OF FIGHTCADE NOW:\n"
+			motd+="\nhttp://www.fightcade.com\n\n"
+			motd+="*********************************************************"
+			motd+="</center>"
+			pdu+=self.sizepad(motd)
 
 		response = self.reply(sequence,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -1305,6 +1323,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		i=0
 
+		# disconnect the client if it's using an older version
+		if (self.version < MIN_CLIENT_VERSION):
+			self.finish()
+			return()
+
 		for client in self.channel.clients:
 			i=i+1
 
@@ -1472,9 +1495,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			motd+='\n'
 
 		# dynamic motd
-		motd+='-!- FightCade server version '+str(VERSION)+'\n'
+		motd+='-!- FightCade server version {0:.2f}'.format(VERSION/100.0)+'\n'
 		if self.version > 0:
-			motd+='-!- You are using FightCade client version '+"{0:.2f}".format(self.version/100.0)+'\n'
+			motd+='-!- You are using FightCade client version {0:.2f}'.format(self.version/100.0)+'\n'
 
 		clients = len(self.server.clients)
 		if clients==1:
@@ -1974,7 +1997,7 @@ if __name__ == "__main__":
 
 	global holepunch, ggposerver
 
-	print "-!- FightCade server version " + str(VERSION)
+	print "-!- FightCade server version {0:.2f}".format(VERSION/100.0)
 	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
 
 	#
