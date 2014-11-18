@@ -573,7 +573,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			# store player nicknames
 			createdb=False
-			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'quarks.sqlite3')
+			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 			if not os.path.exists(dbfile):
 				createdb=True
 				try:
@@ -644,7 +644,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if not self.check_quark_format(quark):
 				return()
 
-			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'quarks.sqlite3')
+			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 			if not os.path.exists(dbfile):
 				return()
 
@@ -1135,7 +1135,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# New connection
 		createdb=False
-		dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'users.sqlite3')
+		dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 		if not os.path.exists(dbfile):
 			createdb=True
 			try:
