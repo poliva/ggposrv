@@ -1,5 +1,4 @@
 * try to obtain a .fr file suitable for FBA replays from our game replay data
-* do not allow to connect to old client versions, always force a minimum version number
 * a user should be able to be idling & challenged in more than one channel at a time
 * add SSL support on login
 * make a player profile web front-end with replay id's
