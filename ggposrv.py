@@ -171,6 +171,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.cc = "null"		# Client's country code
 		self.lastmsg = 0		# timestamp of the last chat message
 		self.useports = False		# set to true when we have potential problems with NAT traversal
+		self.version = 0		# client version
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
@@ -270,7 +271,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				passwordlen=int(data[16+nicklen:16+nicklen+4].encode('hex'),16)
 				password=data[20+nicklen:20+nicklen+passwordlen]
 				port=int(data[20+nicklen+passwordlen:24+nicklen+passwordlen].encode('hex'),16)
-				params=nick,password,port,sequence
+				if len(data) > 24+nicklen+passwordlen:
+					version=int(data[24+nicklen+passwordlen:28+nicklen+passwordlen].encode('hex'),16)
+				else:
+					version=0
+				params=nick,password,port,version,sequence
 
 			if (command==2):
 				if self.nick==None: return()
@@ -1131,7 +1136,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		Handle the initial setting of the user's nickname
 		"""
-		nick,password,port,sequence = params
+		nick,password,port,version,sequence = params
 
 		# New connection
 		createdb=False
@@ -1207,6 +1212,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.port = port
 		self.clienttype="client"
 		self.cc, self.country, self.city = self.geolocate(self.host[0])
+		self.version = version
 
 		# auth successful
 		self.send_ack(sequence)
@@ -1467,6 +1473,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# dynamic motd
 		motd+='-!- FightCade server version '+str(VERSION)+'\n'
+		if self.version > 0:
+			motd+='-!- You are using FightCade client version '+"{0:.2f}".format(self.version/100.0)+'\n'
 
 		clients = len(self.server.clients)
 		if clients==1:
