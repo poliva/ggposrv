@@ -1361,11 +1361,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		for target in sorted(self.server.channels):
 			i=i+1
 			channel = self.server.channels.get(target)
-			pdu+=self.sizepad(channel.name)
-			pdu+=self.sizepad(channel.rom)
-			topic=str(channel.topic)+" ["+str(len(channel.clients))+"]"
-			pdu+=self.sizepad(topic)
-			pdu+=self.pad2hex(i)
+			if (self.version < 32):
+				pdu+=self.sizepad(channel.name)
+				pdu+=self.sizepad(channel.rom)
+				topic=str(channel.topic)+" ["+str(len(channel.clients))+"]"
+				pdu+=self.sizepad(topic)
+				pdu+=self.pad2hex(i)
+			else:
+				pdu+=self.sizepad(channel.name)
+				pdu+=self.sizepad(channel.rom)
+				pdu+=self.sizepad(channel.topic)
+				pdu+=self.pad2hex(len(channel.clients))
+				pdu+=self.pad2hex(i)
 		
 		response = self.reply(sequence,'\x00\x00\x00\x00'+self.pad2hex(i)+pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
