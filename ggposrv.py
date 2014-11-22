@@ -148,6 +148,7 @@ class GGPOQuark(object):
 		self.p2client = None
 		self.spectators = set()
 		self.recorded = False
+		self.useports = False
 		self.channel = None
 
 class GGPOClient(SocketServer.BaseRequestHandler):
@@ -805,7 +806,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			selfchallenge=True
 
 		negseq=4294967289 #'\xff\xff\xff\xf9'
-		if holepunch and self.useports==False and peer.useports==False:
+		if holepunch and self.useports==False and peer.useports==False and quarkobject.useports==False:
 			# when UDP hole punching is enabled clients must use the udp proxy wrapper
 			pdu=self.sizepad("127.0.0.1")
 			if selfchallenge:
@@ -813,7 +814,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				pdu+=self.pad2hex(7001)
 
-			if int(self.host[1])>6009:
+			if int(self.host[1])>6009 or int(self.host[1])<6000:
 				myself.useports=True
 				logging.info('[%s] using holepunch with %s on quark %s (and setting useports=True)' % (self.client_ident(), peer.client_ident(), quark))
 
@@ -821,7 +822,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if holepunch:
 				# if we can't do nat traversal with holepunch, try to use open ports instead
 				logging.info('[%s] WARNING: not using holepunch with %s on quark %s' % (self.client_ident(), peer.client_ident(), quark))
-				if int(self.host[1])>6009:
+				if int(self.host[1])>6009 or int(self.host[1])<6000:
 					msg="Looks like FightCade is having problems doing NAT traversal on your connection: it is recommended that you open GGPO ports on your router."
 					response = self.reply(4294967294,self.sizepad("System")+self.sizepad(msg))
 					logging.debug('to %s: %r' % (myself.client_ident(), response))
@@ -1943,7 +1944,14 @@ class MyUDPHandler(SocketServer.BaseRequestHandler):
 		data = self.request[0].strip()
 		sockfd = self.request[1]
 
-		if data != "ok":
+		if "useports" in data:
+			quark=data.split("/")[1]
+			quarkobject = ggposerver.quarks.setdefault(quark, GGPOQuark(quark))
+			quarkobject.useports=True
+			#ggposerver.quarks[quark].useports=True
+			logging.info("[%s:%d] HOLEPUNCH FAILED for quark %s, will use ports" % (self.client_address[0], self.client_address[1], quark))
+
+		if data != "ok" and "useports" not in data:
 			self.quark = data
 			sockfd.sendto( "ok "+self.quark, self.client_address )
 			logging.info("[%s:%d] HOLEPUNCH request received for quark: %s" % (self.client_address[0], self.client_address[1], self.quark))
