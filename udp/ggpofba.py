@@ -138,9 +138,6 @@ def udp_proxy(args,q):
 	#use only the challenge id for the hole punching server
 	quark = args[0].split(",")[2]
 
-	fba_pid=start_fba(args)
-	q.put(fba_pid)
-
 	sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	# bind the socket to a port, so we can test the user's NAT type
 	try:
@@ -162,10 +159,20 @@ def udp_proxy(args,q):
 	target = bytes2addr(data)
 	logging.debug("connected to %s:%d" % target)
 
-	res = puncher(sockfd, target[0], target[1])
-	logging.info ("Puncher result: %s" % res)
+	punch_ok = puncher(sockfd, target[0], target[1])
+	logging.info ("Puncher result: %s" % punch_ok)
+
+	if not punch_ok:
+		# tell the server that this quark must use ports
+		sockfd.sendto( "useports/"+quark, master)
 
 	time.sleep(2)
+
+	fba_pid=start_fba(args)
+	q.put(fba_pid)
+
+	if not punch_ok:
+		return
 
 	# first request using blocking sockets:
 	emudata, emuaddr = l_sockfd.recvfrom(16384)
