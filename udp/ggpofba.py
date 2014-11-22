@@ -5,7 +5,11 @@
 #
 #  (c) 2014 Pau Oliva Fora (@pof)
 #  (c) 2010 Koen Bollen <meneer koenbollen nl>
+#  (C) 2009 Dmitriy Samovskiy, http://somic.org
 #   https://gist.github.com/koenbollen/464613
+#   https://gist.github.com/somic/224795
+#
+# puncher function License: Apache License, Version 2.0
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,10 +23,12 @@ import socket
 from select import select
 from subprocess import Popen, PIPE
 import struct
+import random
 import threading
 import Queue
 import time
 import traceback
+import logging
 
 def bytes2addr( bytes ):
 	"""Convert a hash to an address pair."""
@@ -45,10 +51,10 @@ def start_fba(args):
 		dirtest = os.getcwd()
 	if not os.path.isfile(os.path.join(dirtest,FBA)):
 		print >>sys.stderr, "Can't find", FBA
+		logging.info("Can't find %s" % FBA)
 		os._exit(1)
 
 	FBA=os.path.join(dirtest,FBA)
-	#print "FOUND FBA:", FBA
 
 	# try to find wine
 	wine="/Applications/Wine.app/Contents/Resources/bin/wine"
@@ -69,8 +75,52 @@ def start_fba(args):
 		p = Popen(args)
 	except OSError:
 		print >>sys.stderr, "Can't execute", FBA
+		logging.info("Can't execute %s" % FBA)
 		os._exit(1)
 	return p
+
+def puncher(sock, remote_host, port):
+# License: Apache License, Version 2.0
+#          http://www.apache.org/licenses/
+#
+	my_token = str(random.random())
+	logging.debug("my_token = %s" % my_token)
+	remote_token = "_"
+
+	sock.setblocking(0)
+	sock.settimeout(5)
+
+	remote_knows_our_token = False
+
+	for i in range(15):
+		r,w,x = select([sock], [sock], [], 0)
+
+		if remote_token != "_" and remote_knows_our_token:
+			logging.debug("we are done - hole was punched from both ends")
+			break
+
+		if r:
+			data, addr = sock.recvfrom(1024)
+			logging.debug("recv: %r" % data)
+			if remote_token == "_":
+				remote_token = data.split()[0]
+				logging.debug("remote_token is now %s" % remote_token)
+			if len(data.split()) == 3:
+				logging.debug("remote end signals it knows our token")
+				remote_knows_our_token = True
+
+		if w:
+			data = "%s %s" % (my_token, remote_token)
+			if remote_token != "_": data += " ok"
+			logging.debug("sending: %r" % data)
+			sock.sendto(data, (remote_host, port))
+			logging.debug("sent %d" % i)
+		time.sleep(0.5)
+
+	logging.debug("puncher done")
+
+	return remote_token != "_"
+
 
 def udp_proxy(args,q):
 
@@ -83,7 +133,7 @@ def udp_proxy(args,q):
 		port=7002
 		l_sockfd.bind(("127.0.0.1", port))
 
-	#print "listening on 127.0.0.1:%d (udp)" % port
+	logging.debug("listening on 127.0.0.1:%d (udp)" % port)
 
 	#use only the challenge id for the hole punching server
 	quark = args[0].split(",")[2]
@@ -100,30 +150,48 @@ def udp_proxy(args,q):
 
 	sockfd.sendto( quark, master )
 	data, addr = sockfd.recvfrom( len(quark)+3 )
+	logging.debug("request received from %s = %r" % (addr, data))
 	if data != "ok "+quark:
 		print >>sys.stderr, "unable to request!"
-		os._exit(1)
+		logging.info("unable to request!")
+		#os._exit(1)
 	sockfd.sendto( "ok", master )
-	#print >>sys.stderr, "request sent, waiting for partner in quark '%s'..." % quark
-	print >>sys.stderr, "request sent, waiting for partner in quark..."
+	logging.info("request sent, waiting for partner in quark '%s'..." % quark)
 	data, addr = sockfd.recvfrom( 6 )
 
 	target = bytes2addr(data)
-	#print >>sys.stderr, "connected to %s:%d" % target
-	print >>sys.stderr, "connected to target"
+	logging.debug("connected to %s:%d" % target)
+
+	res = puncher(sockfd, target[0], target[1])
+	logging.info ("Puncher result: %s" % res)
+
+	time.sleep(2)
 
 	# first request using blocking sockets:
 	emudata, emuaddr = l_sockfd.recvfrom(16384)
+	logging.debug("first request from emulator at %s = %r" % (emuaddr, emudata))
 	if emudata:
+		logging.debug("sending data to target %s = %r" % (target, emudata))
+		time.sleep(2)
 		sockfd.sendto( emudata, target )
 
-	peerdata, peeraddr = sockfd.recvfrom(16384)
-	if peerdata:
-		l_sockfd.sendto( peerdata, emuaddr )
+	try:
+		peerdata, peeraddr = sockfd.recvfrom(16384)
+		logging.debug("first request from peer at %s = %r" % (peeraddr, peerdata))
+		logging.debug("peer %s , target %s" % (peeraddr, target))
+		if peerdata and "ok" not in peerdata:
+			logging.debug("sending data to emulator %s = %r" % (emuaddr, peerdata))
+			l_sockfd.sendto( peerdata, emuaddr )
+	except:
+		logging.info("timeout waiting for peer")
+
+	logging.info("received first request")
 
 	# now continue the game using nonblocking:
 	l_sockfd.setblocking(0)
 	sockfd.setblocking(0)
+
+	logging.debug("setting nonblocking sockets")
 
 	while True:
 		try:
@@ -137,6 +205,7 @@ def udp_proxy(args,q):
 				if peerdata:
 					l_sockfd.sendto( peerdata, emuaddr )
 		except:
+			logging.debug("exit loop")
 			sockfd.close()
 			l_sockfd.close()
 			os._exit(0)
@@ -145,19 +214,20 @@ def process_checker(q):
 
 	time.sleep(15)
 	fba_p=q.get()
-	print >>sys.stderr, "FBA pid:", int(fba_p.pid)
+	logging.debug("FBA pid: %d" % int(fba_p.pid))
 
 	while True:
 		time.sleep(5)
 		fba_status=fba_p.poll()
 		#print "FBA STATUS:", str(fba_status)
 		if fba_status!=None:
-			print >>sys.stderr, "killing process"
+			logging.debug("killing process")
 			os._exit(0)
 
 def main():
 
 	args = sys.argv[1:]
+	logging.debug("args: %s" % args)
 
 	quark=''
 	if len(args)>0:
@@ -176,7 +246,10 @@ def main():
 if __name__ == "__main__":
 
 	try:
+		loglevel=logging.INFO
+		logging.basicConfig(filename='ggpofba.log', filemode='w', level=loglevel, format='%(asctime)s:%(levelname)s:%(message)s')
+
 		main()
 	except:
-		traceback.print_exc(file=open("ggpofba-errors.log","a"))
+		traceback.print_exc(file=open("ggpofba-errors.log","w"))
 		os._exit(1)
