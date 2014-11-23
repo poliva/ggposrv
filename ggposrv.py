@@ -1883,7 +1883,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['ssideki']=GGPOChannel("ssideki", "ssideki", 'Super Sidekicks')
 		self.channels['strhoop']=GGPOChannel("strhoop", "strhoop", 'Street Hoop', '', 1096)
 		self.channels['strider']=GGPOChannel("strider", "strider", 'Strider (US set 1)')
-		self.channels['svc']=GGPOChannel("svc", "svc", 'SvC Chaos - SNK vs Capcom (MVS)', '', 1096)
+		#self.channels['svc']=GGPOChannel("svc", "svc", 'SvC Chaos - SNK vs Capcom (MVS)', '', 1096)
 		self.channels['svcplus']=GGPOChannel("svcplus", "svcplus", 'SvC Chaos - SNK vs Capcom Plus (bootleg, set 1)', '', 1096)
 		self.channels['theroes']=GGPOChannel("theroes", "theroes", 'Thunder Heroes')
 		self.channels['tophuntr']=GGPOChannel("tophuntr", "tophuntr", 'Top Hunter - Roddy & Cathy (set 1)')
