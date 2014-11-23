@@ -53,6 +53,7 @@ import hashlib
 import sqlite3
 import json
 import gzip
+import traceback
 from threading import Thread
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 try:
@@ -2126,3 +2127,5 @@ if __name__ == "__main__":
 	except socket.error, e:
 		logging.error(repr(e))
 		sys.exit(-2)
+	except:
+		traceback.print_exc(file=open("ggposrv-errors.log","a"))
