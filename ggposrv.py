@@ -63,9 +63,9 @@ try:
 except:
 	pass
 
-VERSION=12
+VERSION=14
 
-MIN_CLIENT_VERSION=0
+MIN_CLIENT_VERSION=33
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
