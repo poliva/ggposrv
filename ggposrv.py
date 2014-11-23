@@ -814,7 +814,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				pdu+=self.pad2hex(7001)
 
-			if int(self.host[1])>6009 or int(self.host[1])<6000:
+			if (int(self.host[1])>6009 or int(self.host[1])<6000) and myself.version < 32:
 				myself.useports=True
 				logging.info('[%s] using holepunch with %s on quark %s (and setting useports=True)' % (self.client_ident(), peer.client_ident(), quark))
 
