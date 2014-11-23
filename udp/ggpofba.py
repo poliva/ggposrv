@@ -92,7 +92,7 @@ def puncher(sock, remote_host, port):
 
 	remote_knows_our_token = False
 
-	for i in range(15):
+	for i in range(10):
 		r,w,x = select([sock], [sock], [], 0)
 
 		if remote_token != "_" and remote_knows_our_token:
@@ -166,8 +166,6 @@ def udp_proxy(args,q):
 		# tell the server that this quark must use ports
 		sockfd.sendto( "useports/"+quark, master)
 
-	time.sleep(2)
-
 	fba_pid=start_fba(args)
 	q.put(fba_pid)
 
@@ -179,7 +177,6 @@ def udp_proxy(args,q):
 	logging.debug("first request from emulator at %s = %r" % (emuaddr, emudata))
 	if emudata:
 		logging.debug("sending data to target %s = %r" % (target, emudata))
-		time.sleep(2)
 		sockfd.sendto( emudata, target )
 
 	try:
