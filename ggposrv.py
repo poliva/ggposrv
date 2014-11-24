@@ -239,8 +239,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				iso_code=str(response.country.iso_code)
 			if response.country.name!=None:
 				country=str(response.country.name)
-			if response.city.name!=None:
-				city=str(response.city.name)
+			#if response.city.name!=None:
+				#city=str(response.city.name)
 
 			if (response.subdivisions.most_specific.name=="Barcelona" or
 			    response.subdivisions.most_specific.name=="Tarragona" or
