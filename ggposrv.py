@@ -86,9 +86,10 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 				cli["status"]=client.status
 				cli["channel"]=client.channel.name
 				cli["quark"]=client.quark
-				cli["city"]=client.city
+				#cli["city"]=client.city
 				cli["country"]=client.country
 				cli["cc"]=client.cc
+				cli["version"]=client.version
 				out[client.nick]=cli
 
 		if path == "/games":
@@ -99,6 +100,7 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 					game["p1"]=quark.p1.nick
 					game["p2"]=quark.p2.nick
 					game["spectators"]=len(quark.spectators)
+					game["useports"]=quark.useports
 					out[quark.quark]=game
 
 		res = json.dumps(out);
