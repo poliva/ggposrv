@@ -1889,7 +1889,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['shocktr2']=GGPOChannel("shocktr2", "shocktr2", 'Shock Troopers - 2nd squad')
 		self.channels['shocktro']=GGPOChannel("shocktro", "shocktro", 'Shock Troopers (set 1)')
 		self.channels['slammast']=GGPOChannel("slammast", "slammast", 'Saturday Night Slam Masters (Slam Masters 930713 etc)', '', 496)
-		self.channels['snowbros']=GGPOChannel("snowbros", "snowbros", 'Snow Bros. - Nick & Tom (set 1)', '', 736)
+		#self.channels['snowbros']=GGPOChannel("snowbros", "snowbros", 'Snow Bros. - Nick & Tom (set 1)', '', 736)
 		self.channels['sonicwi2']=GGPOChannel("sonicwi2", "sonicwi2", 'Aero Fighters 2')
 		self.channels['sonicwi3']=GGPOChannel("sonicwi3", "sonicwi3", 'Aero Fighters 3')
 		self.channels['spf2t']=GGPOChannel("spf2t", "spf2t", 'Super Puzzle Fighter II Turbo (Super Puzzle Fighter 2 Turbo 960620 USA)', '', 376)
