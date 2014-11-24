@@ -29,6 +29,7 @@ import Queue
 import time
 import traceback
 import logging
+import platform
 
 def bytes2addr( bytes ):
 	"""Convert a hash to an address pair."""
@@ -143,7 +144,9 @@ def udp_proxy(args,q):
 	try:
 		sockfd.bind(("0.0.0.0", 21112))
 	except socket.error:
-		sockfd.bind(("0.0.0.0", 21113))
+		# kill any existing instances of ggpofba here
+		logging.info("Can't bind to port 21112, killing ggpofba.")
+		killGgpoFba()
 
 	sockfd.sendto( quark, master )
 	data, addr = sockfd.recvfrom( len(quark)+3 )
@@ -213,6 +216,24 @@ def udp_proxy(args,q):
 			sockfd.close()
 			l_sockfd.close()
 			os._exit(0)
+
+def killGgpoFba():
+	if platform.system()=="Windows":
+		try:
+			args = ['taskkill', '/f', '/im', 'ggpofba.exe']
+			Popen(args, shell=True)
+			args = ['tskill', 'ggpofba', '/a']
+			Popen(args, shell=True)
+		except:
+			pass
+	else:
+		try:
+			args = ['pkill', '-f', 'ggpofba.*quark:served']
+			devnull = open(os.devnull, 'w')
+			Popen(args, stdout=devnull, stderr=devnull)
+			devnull.close()
+		except:
+			pass
 
 def process_checker(q):
 
