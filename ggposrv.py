@@ -758,6 +758,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			# announce the match to the public
 			myself=self.get_myclient_from_quark(quark)
+			myself.previous_status=myself.status
+			myself.status=2
 			params = 2,0
 			myself.handle_status(params)
 
@@ -995,11 +997,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.opponent=nick
 		client.opponent=self.nick
 
-		self.previous_status=self.status
-		client.previous_status=client.status
+		#self.previous_status=self.status
+		#client.previous_status=client.status
 
-		self.status=2
-		client.status=2
+		#self.status=2
+		#client.status=2
 
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
