@@ -1657,6 +1657,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					if os.path.exists(quarkfile):
 						nick="System"
 						msg = "To replay your match, type /replay "+str(quarkobject.quark)
+						#msg = "To replay your match, type /replay "+str(quarkobject.quark)+"@"+str(quarkobject.channel.name)
 						negseq=4294967294 #'\xff\xff\xff\xfe'
 						response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
 						logging.debug('to %s: %r' % (self.client_ident(), response))
