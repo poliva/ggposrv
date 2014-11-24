@@ -832,10 +832,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				# if we can't do nat traversal with holepunch, try to use open ports instead
 				logging.info('[%s] WARNING: not using holepunch with %s on quark %s' % (self.client_ident(), peer.client_ident(), quark))
 				if int(self.host[1])>6009 or int(self.host[1])<6000:
-					msg="Looks like FightCade is having problems doing NAT traversal on your connection: it is recommended that you open GGPO ports on your router."
+					msg="Looks like FightCade is having problems doing NAT traversal on your connection.\n"
+					msg+="If you can't connect to anyone try opening GGPO ports on your router."
 					response = self.reply(4294967294,self.sizepad("System")+self.sizepad(msg))
 					logging.debug('to %s: %r' % (myself.client_ident(), response))
 					myself.send_queue.append(response)
+					# warn the other peer that he's innocent:
+					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000:
+						msg="Looks like "+myself.nick+" has problems connecting (problem is on his side, not on yours).\n"
+						msg+="If you can't connect with him try opening GGPO ports on your router."
+						response = self.reply(4294967294,self.sizepad("System")+self.sizepad(msg))
+						if quarkobject.p1client==myself:
+							quarkobject.p2client.send_queue.append(response)
+						elif quarkobject.p2client==myself:
+							quarkobject.p1client.send_queue.append(response)
 
 			pdu=self.sizepad(peer.host[0])
 			pdu+=self.pad2hex(peer.fbaport)
