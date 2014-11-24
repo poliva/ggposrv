@@ -701,7 +701,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				f=open(quarkfile)
 
-			CHUNKSIZE=self.server.channels[channel].chunksize
+			try:
+				CHUNKSIZE=self.server.channels[channel].chunksize
+			except:
+				CHUNKSIZE=1096
 			response = f.read(CHUNKSIZE)
 			while (response):
 				time.sleep(0.8)
