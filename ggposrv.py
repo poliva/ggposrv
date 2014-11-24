@@ -65,7 +65,7 @@ except:
 
 VERSION=14
 
-MIN_CLIENT_VERSION=33
+MIN_CLIENT_VERSION=34
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
@@ -666,6 +666,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			if channel=='':
 				channel="lobby"
+
+			if channel=='ssf2t'
+				channel="ssf2xj"
 
 			pdu='\x00\x00\x00\x00'
 			pdu+=self.sizepad(player1)
@@ -1656,8 +1659,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-gamebuffer.fs')
 					if os.path.exists(quarkfile):
 						nick="System"
-						msg = "To replay your match, type /replay "+str(quarkobject.quark)
-						#msg = "To replay your match, type /replay "+str(quarkobject.quark)+"@"+str(quarkobject.channel.name)
+						msg = "To replay your match, type /replay "+str(quarkobject.quark)+"@"+str(quarkobject.channel.name)
 						negseq=4294967294 #'\xff\xff\xff\xfe'
 						response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(msg)))
 						logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -1880,7 +1882,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['spinmast']=GGPOChannel("spinmast", "spinmast", 'Spin Master')
 		self.channels['ssf2']=GGPOChannel("ssf2", "ssf2", 'Super Street Fighter II - the new challengers (super street fighter 2 930911 etc)', '', 376)
 		#self.channels['ssf2t']=GGPOChannel("ssf2t", "ssf2t", 'Super Street Fighter II Turbo (super street fighter 2 X 940223 etc)', '', 376)
-		self.channels['ssf2xj']=GGPOChannel("ssf2xj", "ssf2xj", 'Super Street Fighter II X - grand master challenge (super street fighter 2 X 940223 Japan)')
+		self.channels['ssf2xj']=GGPOChannel("ssf2xj", "ssf2xj", 'Super Street Fighter II X - grand master challenge (super street fighter 2 X 940223 Japan)', '', 376)
 		self.channels['ssideki2']=GGPOChannel("ssideki2", "ssideki2", 'Super Sidekicks 2 - the world championship', '', 1096)
 		self.channels['ssideki3']=GGPOChannel("ssideki3", "ssideki3", 'Super Sidekicks 3 - the next glory', '', 1096)
 		self.channels['ssideki4']=GGPOChannel("ssideki4", "ssideki4", 'The Ultimate 11 - SNK football championship')
