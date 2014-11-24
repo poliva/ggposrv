@@ -667,7 +667,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if channel=='':
 				channel="lobby"
 
-			if channel=='ssf2t'
+			if channel=='ssf2t':
 				channel="ssf2xj"
 
 			pdu='\x00\x00\x00\x00'
