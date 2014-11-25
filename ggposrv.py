@@ -178,6 +178,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.lastmsg = 0		# timestamp of the last chat message
 		self.useports = False		# set to true when we have potential problems with NAT traversal
 		self.version = 0		# client version
+		self.warnmsg = ''		# Warning message (shown after match)
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
@@ -570,6 +571,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# match started successfully, reset useports on both clients:
 			quarkobject.p1client.useports=False
 			quarkobject.p2client.useports=False
+			quarkobject.p1client.warnmsg=''
+			quarkobject.p2client.warnmsg=''
 
 			# store initial savestate (gamebuffer)
 			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
@@ -835,19 +838,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				logging.info('[%s] WARNING: not using holepunch with %s on quark %s' % (self.client_ident(), peer.client_ident(), quark))
 				if int(self.host[1])>6009 or int(self.host[1])<6000:
 					msg="Looks like FightCade is having problems doing NAT traversal on your connection.\n"
-					msg+="If you can't connect to anyone try opening GGPO ports on your router."
-					response = self.reply(4294967294,self.sizepad("System")+self.sizepad(msg))
-					logging.debug('to %s: %r' % (myself.client_ident(), response))
-					myself.send_queue.append(response)
+					msg+="If you can't connect try opening GGPO ports on your router."
+					myself.warnmsg=msg
 					# warn the other peer that he's innocent:
 					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000:
 						msg="Looks like "+myself.nick+" has problems connecting (problem is on his side, not on yours).\n"
 						msg+="If you can't connect with him try opening GGPO ports on your router."
-						response = self.reply(4294967294,self.sizepad("System")+self.sizepad(msg))
 						if quarkobject.p1client==myself:
-							quarkobject.p2client.send_queue.append(response)
+							quarkobject.p2client.warnmsg=msg
 						elif quarkobject.p2client==myself:
-							quarkobject.p1client.send_queue.append(response)
+							quarkobject.p1client.warnmsg=msg
 
 			pdu=self.sizepad(peer.host[0])
 			pdu+=self.pad2hex(peer.fbaport)
@@ -1607,6 +1607,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# return the client to non-playing state when the emulator closes
 			myself=self.get_myclient_from_quark(self.quark)
 			logging.info("[%s] cleaning: %s" % (self.client_ident(), myself.client_ident()))
+
+			if myself.warnmsg!='':
+				nick="System"
+				negseq=4294967294 #'\xff\xff\xff\xfe'
+				response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(myself.warnmsg)))
+				myself.send_queue.append(response)
+				logging.info("[%s] sending warnmsg to %s : %s" % (self.client_ident(), myself.client_ident(), myself.warnmsg.replace('\n', ' ') ))
+				myself.warnmsg=''
 
 			myself.side=0
 			myself.opponent=None
