@@ -223,7 +223,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		return self
 
 	def check_quark_format(self,quark):
-		a = re.compile("^challenge-[0-9]{4}-[0-9]{10,11}[.][0-9]{2}$")
+		a = re.compile("^challenge\-[0-9]{4}\-[0-9]{10,11}[.][0-9]{2}$")
 		if a.match(quark):
 			return True
 		else:
