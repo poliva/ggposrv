@@ -103,7 +103,17 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 					game["useports"]=quark.useports
 					out[quark.quark]=game
 
-		res = json.dumps(out);
+		if path == "/stats":
+			out["version"]='{0:.2f}'.format(VERSION/100.0)
+			clients = len(ggposerver.clients)
+			out["clients"]=clients
+			quarks=0
+			for quark in ggposerver.quarks.values():
+				if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None:
+					quarks=quarks+1
+			out["games"]=quarks
+
+		res = json.dumps(out, indent=4, sort_keys=True);
 		self.wfile.write(res)
 
 
