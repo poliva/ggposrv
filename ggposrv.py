@@ -795,7 +795,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		quarkobject.channel=myself.channel
 
 		if quarkobject.p1!=None and quarkobject.p2!=None:
-			logging.info('[%s] getpeer in a full quark: go away' % (self.client_ident(), response))
+			logging.info('[%s] getpeer in a full quark: go away' % (self.client_ident()))
 			self.finish()
 			return
 
