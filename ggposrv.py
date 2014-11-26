@@ -63,7 +63,7 @@ try:
 except:
 	pass
 
-VERSION=14
+VERSION=15
 
 MIN_CLIENT_VERSION=34
 
@@ -852,7 +852,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					myself.warnmsg=msg
 					# warn the other peer that he's innocent:
 					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000:
-						msg="Looks like "+myself.nick+" has problems connecting (problem is on his side, not on yours).\n"
+						peer_nick = myself.nick
+						if peer_nick==None or peer_nick='':
+							peer_nick="your peer"
+						msg="Looks like "+str(peer_nick)+" has problems connecting (problem is on his side, not on yours).\n"
 						msg+="If you can't connect with him try opening GGPO ports on your router."
 						if quarkobject.p1client==myself:
 							quarkobject.p2client.warnmsg=msg
