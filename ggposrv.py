@@ -853,7 +853,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					# warn the other peer that he's innocent:
 					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000:
 						peer_nick = myself.nick
-						if peer_nick==None or peer_nick='':
+						if peer_nick==None or peer_nick=='':
 							peer_nick="your peer"
 						msg="Looks like "+str(peer_nick)+" has problems connecting (problem is on his side, not on yours).\n"
 						msg+="If you can't connect with him try opening GGPO ports on your router."
