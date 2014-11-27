@@ -615,12 +615,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							player1 TEXT,
 							player2 TEXT,
 							channel TEXT,
-							date TEXT);""")
+							date TEXT,
+							realtime_views INTEGER,
+							saved_views INTEGER);""")
 				cursor.execute("""CREATE UNIQUE INDEX quarks_quark_idx on quarks (quark);""")
 				logging.info("[%s] created empty quark database" % (self.client_ident()))
 
 			date = datetime.datetime.today().strftime("%d %b %Y %H:%M:%S")
-			sql = "INSERT INTO quarks (quark, player1, player2, channel, date) VALUES (?,?,?,?,?)"
+			sql = "INSERT INTO quarks (quark, player1, player2, channel, date, realtime_views, saved_views) VALUES (?,?,?,?,?,0,0)"
 			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date])
 			conn.commit()
 			conn.close()
@@ -905,6 +907,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.clienttype="spectator"
 			self.quark=quark
 
+			# increment saved views on db
+			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
+			conn = sqlite3.connect(dbfile)
+			cursor = conn.cursor()
+			sql = "UPDATE quarks SET saved_views=saved_views+1 WHERE quark=?"
+			cursor.execute(sql, [quark])
+			conn.commit()
+			conn.close()
+
 			return()
 
 		logging.info('[%s] spectating real-time quark: %s' % (self.client_ident(), quark))
@@ -933,6 +944,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		for spectator in quarkobject.spectators:
 			spectator.send_queue.append(response)
+
+		# increment realtime views on db
+		dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
+		conn = sqlite3.connect(dbfile)
+		cursor = conn.cursor()
+		sql = "UPDATE quarks SET realtime_views=realtime_views+1 WHERE quark=?"
+		cursor.execute(sql, [quark])
+		conn.commit()
+		conn.close()
 
 	def spectator_leave(self, quark):
 
