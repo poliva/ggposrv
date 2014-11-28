@@ -1101,7 +1101,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		client = self.get_client_from_nick(nick)
 
 		# check that user is connected, in playing state (status=2) and in the same channel
-		if (client.status==2 and client.channel==self.channel):
+		if (client.status==2 and client.channel==self.channel and client.quark!=None):
 
 			# send ACK to the user who wants to watch the running match
 			self.send_ack(sequence)
@@ -1111,7 +1111,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu=''
 			pdu+=self.sizepad(client.nick)
 			pdu+=self.sizepad(client.opponent)
-			pdu+=self.sizepad("quark:stream,"+self.channel.name+","+client.quark+",7000")
+			pdu+=self.sizepad("quark:stream,"+self.channel.name+","+str(client.quark)+",7000")
 
 			response = self.reply(negseq,pdu)
 			logging.debug('to %s: %r' % (self.client_ident(), response))
