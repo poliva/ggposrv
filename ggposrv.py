@@ -670,6 +670,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if not self.check_quark_format(quark):
 				return()
 
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
+			if not os.path.exists(quarkfile):
+				return()
+
 			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 			if not os.path.exists(dbfile):
 				return()
@@ -698,10 +702,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.request.send(response)
 
 			# now broadcast the quark to the client
-
-			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
-			if not os.path.exists(quarkfile):
-				return()
 
 			f=open(quarkfile, 'rb')
 			response = f.read()
