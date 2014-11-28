@@ -1907,7 +1907,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['ringdest']=GGPOChannel("ringdest", "ringdest", 'Ring of Destruction - slammasters II (940902 Euro)', '', 496)
 		self.channels['rotd']=GGPOChannel("rotd", "rotd", 'Rage of the Dragons', '', 1096)
 		self.channels['s1945p']=GGPOChannel("s1945p", "s1945p", 'Strikers 1945 plus')
-		self.channels['sailormn']=GGPOChannel("sailormn", "sailormn", 'Pretty Soldier Sailor Moon (version 95/03/22B)')
+		#self.channels['sailormn']=GGPOChannel("sailormn", "sailormn", 'Pretty Soldier Sailor Moon (version 95/03/22B)')
 		self.channels['samsh5sp']=GGPOChannel("samsh5sp", "samsh5sp", 'Samurai Shodown V Special (set 1, uncensored)', '', 1096)
 		self.channels['samsho2']=GGPOChannel("samsho2", "samsho2", 'Samurai Shodown II', '', 1096)
 		self.channels['samsho3']=GGPOChannel("samsho3", "samsho3", 'Samurai Shodown III (set 1)')
