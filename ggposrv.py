@@ -768,7 +768,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if self.clienttype=="player":
 			# call auto_spectate() to record the game
-			logging.debug('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
+			logging.info('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
 			self.auto_spectate(quark)
 
 			# announce the match to the public
@@ -872,7 +872,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+=self.pad2hex(0)
 
 		response = self.reply(negseq,pdu)
-		logging.debug('to %s: %r' % (self.client_ident(), response))
+		logging.info('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
 	def auto_spectate(self, quark):
