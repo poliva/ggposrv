@@ -1678,17 +1678,17 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				# if connection didn't succeed, send the warning message to both peers
 				nick="System"
 				negseq=4294967294 #'\xff\xff\xff\xfe'
-				if myself.warnmsg!='' and myself.clienttype=="client":
+				if myself.warnmsg!='' and myself.clienttype=="client" and myself.host[0]!=mypeer.host[0]:
 					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(myself.warnmsg)))
 					myself.send_queue.append(response)
 					logging.info("[%s] sending warnmsg to %s : %s" % (self.client_ident(), myself.client_ident(), myself.warnmsg.replace('\n', ' ') ))
-					myself.warnmsg=''
+				myself.warnmsg=''
 
-				if mypeer.warnmsg!='' and mypeer.clienttype=="client":
+				if mypeer.warnmsg!='' and mypeer.clienttype=="client" and myself.host[0]!=mypeer.host[0]:
 					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(mypeer.warnmsg)))
 					mypeer.send_queue.append(response)
 					logging.info("[%s] sending warnmsg to %s : %s" % (self.client_ident(), mypeer.client_ident(), mypeer.warnmsg.replace('\n', ' ') ))
-					mypeer.warnmsg=''
+				mypeer.warnmsg=''
 
 				# remove quark if we are a player that closes ggpofba
 				if quarkobject.p1==self or quarkobject.p2==self and self.quark!=None:
