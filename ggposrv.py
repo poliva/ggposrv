@@ -621,7 +621,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				cursor.execute("""CREATE UNIQUE INDEX quarks_quark_idx on quarks (quark);""")
 				logging.info("[%s] created empty quark database" % (self.client_ident()))
 
-			date = datetime.datetime.today().strftime("%d %b %Y %H:%M:%S")
+			date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 			sql = "INSERT INTO quarks (quark, player1, player2, channel, date, realtime_views, saved_views) VALUES (?,?,?,?,?,0,0)"
 			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date])
 			conn.commit()
