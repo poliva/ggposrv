@@ -1601,33 +1601,21 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		return('%s@%s:%s#%s/%s' % (self.nick, self.host[0], self.host[1], self.channel.name, self.clienttype))
 
-	def finish(self,response=None):
+	def finish(self):
 		"""
 		The client conection is finished. Do some cleanup to ensure that the
 		client doesn't linger around in any channel or the client list.
 		"""
 		logging.info('[%s] Client disconnected' % (self.client_ident()))
-		if response == None:
-
-			negseq=4294967293 #'\xff\xff\xff\xfd'
-			pdu=''
-			pdu+='\x00\x00\x00\x01' #unk1
-			pdu+='\x00\x00\x00\x00' #unk2
-			pdu+=self.sizepad(self.nick)
-
-			response = self.reply(negseq,pdu)
-
 		if self in self.channel.clients:
 			# Client is gone without properly QUITing or PARTing this
 			# channel.
 			for client in self.channel.clients:
-				if (client!=self):
-					client.send_queue.append(response)
-					logging.debug('to %s: %r' % (client.client_ident(), response))
 				# if the gone client was playing against someone, update his status
 				if (client.opponent==self.nick):
 					client.opponent=None
-			self.channel.clients.remove(self)
+			#self.channel.clients.remove(self)
+			self.handle_part(self.channel.name)
 			logging.info("[%s] removing myself from channel" % (self.client_ident()))
 
 		if self.nick in self.server.clients and self.clienttype=="client":
