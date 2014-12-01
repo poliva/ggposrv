@@ -1874,6 +1874,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['mslug2']=GGPOChannel("mslug2", "mslug2", 'Metal Slug 2 - super vehicle-001/II')
 		self.channels['mslug3']=GGPOChannel("mslug3", "mslug3", 'Metal Slug 3', '', 1096)
 		self.channels['mslug4']=GGPOChannel("mslug4", "mslug4", 'Metal Slug 4', '', 1096)
+		self.channels['mslug3b6']=GGPOChannel("mslug3b6", "mslug3b6", 'Metal Slug 6 [Bootleg, bootleg of "Metal Slug 3"]', '', 1096)
 		self.channels['mslug']=GGPOChannel("mslug", "mslug", 'Metal Slug - super vehicle-001', '', 1096)
 		self.channels['mslugx']=GGPOChannel("mslugx", "mslugx", 'Metal Slug X - super vehicle-001', '', 1096)
 		self.channels['msword']=GGPOChannel("msword", "msword", 'Magic Sword - heroic fantasy (25.07.1990 other country)')
