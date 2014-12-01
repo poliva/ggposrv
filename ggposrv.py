@@ -439,12 +439,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				response = handler(params)
 			except AttributeError, e:
 				raise e
-				logging.error('[%s] ERROR %s' % (self.client_ident(), e))
+				logging.error('[%s] ERROR (1) %s' % (self.client_ident(), e))
 			except GGPOError, e:
-				response = '[%s] ERROR %s %s' % (self.client_ident(), e.code, e.value)
+				response = '[%s] ERROR (2) %s %s' % (self.client_ident(), e.code, e.value)
 				logging.error('%s' % (response))
 			except Exception, e:
-				response = '[%s] ERROR %s' % (self.client_ident(), repr(e))
+				response = '[%s] ERROR (3) %s' % (self.client_ident(), repr(e))
 				logging.error('%s' % (response))
 				raise
 
@@ -471,6 +471,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				try:
 					self.request.send(msg)
 				except:
+					logging.info('[%s] Can\'t send data. Finishing ' % (self.client_ident(), ))
 					self.finish()
 
 			# See if the client has any commands for us.
@@ -496,6 +497,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							#self.request.send(response)
 
 				except:
+					logging.info('[%s] Can\'t read data. Finishing ' % (self.client_ident(), ))
 					self.finish()
 
 		self.request.close()
