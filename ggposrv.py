@@ -498,8 +498,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
 							#self.request.send(response)
 
-				except:
-					logging.info('[%s] Can\'t read data. Finishing ' % (self.client_ident(), ))
+				except Exception, e:
+					logging.info('[%s] Can\'t read data. Finishing. ERROR: %s' % (self.client_ident(), repr(e)))
 					self.finish()
 
 		self.request.close()
