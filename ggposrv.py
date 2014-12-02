@@ -808,9 +808,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		i=0
 		while True:
 			i=i+1
+			time.sleep(0.8)
 			peer=self.get_peer_from_quark(quark)
-			time.sleep(1)
-			if peer!=self or i>=50:
+			if peer!=self or i>=30:
 				break
 
 		if peer==self:
@@ -876,7 +876,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+=self.pad2hex(0)
 
 		response = self.reply(negseq,pdu)
-		logging.info('to %s: %r' % (self.client_ident(), response))
+		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
 	def auto_spectate(self, quark):
@@ -1028,18 +1028,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			client.challenging.clear()
 			self.challenging.clear()
 
-		#logging.debug('[%s] looking for nick: %s found %s' % (self.client_ident(), nick, client.nick))
-
-		self.side=2
-		self.opponent=nick
-		client.opponent=self.nick
-
-		#self.previous_status=self.status
-		#client.previous_status=client.status
-
-		#self.status=2
-		#client.status=2
-
 		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
 		random2=random.randint(10,99)
@@ -1047,6 +1035,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		self.quark=quark
 		client.quark=quark
+
+		self.side=2
+		client.side=1
+		self.opponent=nick
+		client.opponent=self.nick
 
 		# send the quark stream uri to the user who accepted the challenge
 		negseq=4294967290 #'\xff\xff\xff\xfa'
@@ -1058,7 +1051,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
-
 
 		# send the quark stream uri to the challenge initiator
 		negseq=4294967290 #'\xff\xff\xff\xfa'
@@ -1603,7 +1595,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		Return the client identifier as included in many command replies.
 		"""
-		return('%s@%s:%s#%s/%s' % (self.nick, self.host[0], self.host[1], self.channel.name, self.clienttype))
+		return('%s@%s:%s#%s/%s(%s)' % (self.nick, self.host[0], self.host[1], self.channel.name, self.clienttype, self.quark))
 
 	def finish(self):
 		"""
