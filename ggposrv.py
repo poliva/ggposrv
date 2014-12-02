@@ -422,10 +422,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				nick=data[16:16+nicklen]
 				params = nick,sequence
 
-			if (command!="savestate" and command!="list"):
-				logging.info('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
-			else:
+			if command in ["join", "challenge", "decline", "cancel", "accept", "getnicks", "watch", "spectator"]:
+				logging.info('[%s] SEQUENCE: %d COMMAND: %s %s' % (self.client_ident(),sequence,command,params[0]))
+			elif command in ["savestate", "list"]:
 				logging.debug('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
+			else:
+				logging.info('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
 
 			try:
 				handler = getattr(self, 'handle_%s' % (command), None)
