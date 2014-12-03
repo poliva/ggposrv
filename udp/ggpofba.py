@@ -147,6 +147,7 @@ def udp_proxy(args,q):
 		# kill any existing instances of ggpofba here
 		logging.info("Can't bind to port 21112, killing ggpofba.")
 		killGgpoFba()
+		os._exit(1)
 
 	sockfd.sendto( quark, master )
 	data, addr = sockfd.recvfrom( len(quark)+3 )
@@ -157,7 +158,15 @@ def udp_proxy(args,q):
 		#os._exit(1)
 	sockfd.sendto( "ok", master )
 	logging.info("request sent, waiting for partner in quark '%s'..." % quark)
-	data, addr = sockfd.recvfrom( 6 )
+	sockfd.settimeout(25)
+	try:
+		data, addr = sockfd.recvfrom( 6 )
+	except socket.timeout:
+		logging.info("timeout waiting for peer's address. Using ports.")
+		sockfd.sendto( "useports/"+quark, master)
+		fba_pid=start_fba(args)
+		q.put(fba_pid)
+		return
 
 	target = bytes2addr(data)
 	logging.debug("connected to %s:%d" % target)
@@ -167,6 +176,7 @@ def udp_proxy(args,q):
 
 	if not punch_ok:
 		# tell the server that this quark must use ports
+		logging.info("Puncher failed. Using ports.")
 		sockfd.sendto( "useports/"+quark, master)
 
 	fba_pid=start_fba(args)
@@ -245,6 +255,7 @@ def process_checker(q):
 		time.sleep(5)
 		fba_status=fba_p.poll()
 		#print "FBA STATUS:", str(fba_status)
+		#logging.debug("FBA STATUS: %s" % str(fba_status))
 		if fba_status!=None:
 			logging.debug("killing process")
 			os._exit(0)
