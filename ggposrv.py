@@ -644,10 +644,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		connections = dict(self.server.connections)
 		for host in connections:
-			client = self.server.connections[host]
-			if client.clienttype=="spectator" and client.quark==quark and client.side==3:
-				logging.debug('to %s: %r' % (client.client_ident(), response))
-				client.send_queue.append(response)
+			try:
+				client = self.server.connections[host]
+				if client.clienttype=="spectator" and client.quark==quark and client.side==3:
+					logging.debug('to %s: %r' % (client.client_ident(), response))
+					client.send_queue.append(response)
+			except KeyError:
+				pass
 
 		# record match for future broadcast
 		try:
