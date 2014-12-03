@@ -852,21 +852,38 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if holepunch:
 				# if we can't do nat traversal with holepunch, try to use open ports instead
 				logging.info('[%s] WARNING: not using holepunch with %s on quark %s' % (self.client_ident(), peer.client_ident(), quark))
-				if int(self.host[1])>6009 or int(self.host[1])<6000:
+
+				if int(self.host[1])>6009 or int(self.host[1])<6000 and myself!=None:
 					msg="Looks like FightCade is having problems doing NAT traversal on your connection.\n"
 					msg+="If you can't connect try opening GGPO ports on your router."
 					myself.warnmsg=msg
 					# warn the other peer that he's innocent:
-					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000:
+					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000 and quarkobject!=None:
 						peer_nick = myself.nick
 						if peer_nick==None or peer_nick=='':
 							peer_nick="your peer"
 						msg="Looks like "+str(peer_nick)+" has problems connecting (problem is on his side, not on yours).\n"
 						msg+="If you can't connect with him try opening GGPO ports on your router."
-						if quarkobject.p1client==myself:
+						if quarkobject.p1client==myself and quarkobject.p2client!=None:
 							quarkobject.p2client.warnmsg=msg
-						elif quarkobject.p2client==myself:
+						elif quarkobject.p2client==myself and quarkobject.p1client!=None:
 							quarkobject.p1client.warnmsg=msg
+
+				if int(peer.host[1])>6009 or int(peer.host[1])<6000 and quarkobject!=None:
+					msg="Looks like FightCade is having problems doing NAT traversal on your connection.\n"
+					msg+="If you can't connect try opening GGPO ports on your router."
+					if quarkobject.p1client==myself and quarkobject.p2client!=None:
+						quarkobject.p2client.warnmsg=msg
+					elif quarkobject.p2client==myself and quarkobject.p1client!=None:
+						quarkobject.p1client.warnmsg=msg
+					# warn the other peer that he's innocent:
+					if int(self.host[1])<=6009 and int(self.host[1])>=6000:
+						peer_nick = myself.opponent
+						if peer_nick==None or peer_nick=='':
+							peer_nick="your peer"
+						msg="Looks like "+str(peer_nick)+" has problems connecting (problem is on his side, not on yours).\n"
+						msg+="If you can't connect with him try opening GGPO ports on your router."
+						myself.warnmsg=msg
 
 			pdu=self.sizepad(peer.host[0])
 			pdu+=self.pad2hex(peer.fbaport)
