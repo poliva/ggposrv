@@ -650,7 +650,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				client.send_queue.append(response)
 
 		# record match for future broadcast
-		quarkobject = self.server.quarks[quark]
+		try:
+			quarkobject = self.server.quarks[quark]
+		except KeyError:
+			return()
+
 		if self.check_quark_format(quark) and quarkobject.recorded == True:
 			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-savestate.fs')
 			if not os.path.exists(quarkfile):
