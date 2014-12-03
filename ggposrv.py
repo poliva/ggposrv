@@ -441,12 +441,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				response = handler(params)
 			except AttributeError, e:
 				raise e
-				logging.error('[%s] ERROR (1) %s' % (self.client_ident(), e))
+				logging.error('[%s] ERROR (1) %s in command %s' % (self.client_ident(), e, command))
 			except GGPOError, e:
-				response = '[%s] ERROR (2) %s %s' % (self.client_ident(), e.code, e.value)
+				response = '[%s] ERROR (2) %s %s in command %s' % (self.client_ident(), e.code, e.value, command)
 				logging.error('%s' % (response))
 			except Exception, e:
-				response = '[%s] ERROR (3) %s' % (self.client_ident(), repr(e))
+				response = '[%s] ERROR (3) %s in command %s' % (self.client_ident(), repr(e), command)
 				logging.error('%s' % (response))
 				raise
 
