@@ -510,9 +510,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		connections = dict(self.server.connections)
 		for host in connections:
-			client = self.server.connections[host]
-			if client.clienttype=="player" and client.quark==quark and client.host!=self.host:
-				return client
+			try:
+				client = self.server.connections[host]
+				if client.clienttype=="player" and client.quark==quark and client.host!=self.host:
+					return client
+			except KeyError:
+				pass
 		return self
 
 	def get_myclient_from_quark(self, quark):
@@ -571,11 +574,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		connections = dict(self.server.connections)
 		for host in connections:
-			client = self.server.connections[host]
-			if client.clienttype=="spectator" and client.quark==quark and client.side==0:
-				logging.debug('to %s: %r' % (client.client_ident(), response))
-				client.send_queue.append(response)
-				client.side=3
+			try:
+				client = self.server.connections[host]
+				if client.clienttype=="spectator" and client.quark==quark and client.side==0:
+					logging.debug('to %s: %r' % (client.client_ident(), response))
+					client.send_queue.append(response)
+					client.side=3
+			except KeyError:
+				pass
 
 		# record match for future broadcast
 		quarkobject = self.server.quarks[quark]
