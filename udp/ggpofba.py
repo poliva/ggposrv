@@ -102,6 +102,9 @@ def puncher(sock, remote_host, port):
 
 		if r:
 			data, addr = sock.recvfrom(1024)
+			if addr[0]==remote_host and addr[1]!=port:
+				logging.info("remote end uses symmetric or restricted nat. Changing port from %d to %d." % (port, addr[1]))
+				port=addr[1]
 			logging.debug("recv: %r" % data)
 			if remote_token == "_":
 				remote_token = data.split()[0]
@@ -120,7 +123,7 @@ def puncher(sock, remote_host, port):
 
 	logging.debug("puncher done")
 
-	return remote_token != "_"
+	return remote_token != "_", port
 
 
 def udp_proxy(args,q):
@@ -171,13 +174,17 @@ def udp_proxy(args,q):
 	target = bytes2addr(data)
 	logging.debug("connected to %s:%d" % target)
 
-	punch_ok = puncher(sockfd, target[0], target[1])
+	punch_ok, port = puncher(sockfd, target[0], target[1])
 	logging.info ("Puncher result: %s" % punch_ok)
 
 	if not punch_ok:
 		# tell the server that this quark must use ports
 		logging.info("Puncher failed. Using ports.")
 		sockfd.sendto( "useports/"+quark, master)
+
+	if port!=target[1]:
+		logging.info("remote end uses symmetric or restricted nat. Changing port from %d to %d." % (target[1], port))
+		target = (target[0], port)
 
 	fba_pid=start_fba(args)
 	q.put(fba_pid)
