@@ -186,8 +186,14 @@ def udp_proxy(args,q):
 		return
 
 	# first request using blocking sockets:
-	emudata, emuaddr = l_sockfd.recvfrom(16384)
-	logging.debug("first request from emulator at %s = %r" % (emuaddr, emudata))
+	l_sockfd.settimeout(25)
+	try:
+		emudata, emuaddr = l_sockfd.recvfrom(16384)
+		logging.debug("first request from emulator at %s = %r" % (emuaddr, emudata))
+	except socket.timeout:
+		logging.info("timeout waiting for emulator")
+		emuaddr = ('127.0.0.1', 6000)
+
 	if emudata:
 		logging.debug("sending data to target %s = %r" % (target, emudata))
 		sockfd.sendto( emudata, target )
@@ -282,6 +288,7 @@ def main():
 if __name__ == "__main__":
 
 	try:
+		#loglevel=logging.DEBUG
 		loglevel=logging.INFO
 		logging.basicConfig(filename='ggpofba.log', filemode='w', level=loglevel, format='%(asctime)s:%(levelname)s:%(message)s')
 
