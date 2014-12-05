@@ -479,9 +479,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			# See if the client has any commands for us.
 			if len(ready_to_read) == 1 and ready_to_read[0] == self.request:
 				try:
-					data+= self.request.recv(16384)
+					dataread=self.request.recv(16384)
+					data+=dataread
 
-					if not data:
+					if not dataread:
 						break
 					#logging.debug('[RECV] from %s: %r' % (self.client_ident(), data))
 
