@@ -54,7 +54,7 @@ import sqlite3
 import json
 import gzip
 import traceback
-from threading import Thread
+import threading
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 try:
 	# http://dev.maxmind.com/geoip/geoip2/geolite2/
@@ -2179,6 +2179,11 @@ if __name__ == "__main__":
 	if options.verbose:
 		logging.info("We're being verbose")
 
+	# set the thread stack size, by default it uses the operating system value found by 'ulimit -s' = 8192 kbytes (8Mb).
+	# the minimum value here is 32768 (32kB), and ideally should be multiple of 4096. For example 524288 = 512kb
+	# With the default value of 8192 kB (8Mb) I can create around 300 threads. Setting it to 2Mb and see what happens..
+	threading.stack_size(4096*512)
+
 	#
 	# Go into daemon mode
 	#
@@ -2193,7 +2198,7 @@ if __name__ == "__main__":
 		if holepunch:
 			punchserver = RendezvousUDPServer((options.listen_address, int(options.listen_port)), MyUDPHandler)
 			logging.info('Starting holepunch on %s:%s/udp' % (options.listen_address, options.listen_port))
-			t = Thread(target=punchserver.serve_forever)
+			t = threading.Thread(target=punchserver.serve_forever)
 			t.daemon = True
 			t.start()
 
@@ -2203,7 +2208,7 @@ if __name__ == "__main__":
 		if options.httpserver:
 			webserver = HTTPServer((options.listen_address, 8000), GGPOHttpHandler)
 			logging.info('Starting http server on %s:8000/tcp' % (options.listen_address))
-			t2=Thread(target=webserver.serve_forever)
+			t2=threading.Thread(target=webserver.serve_forever)
 			t2.daemon=True
 			t2.start()
 
