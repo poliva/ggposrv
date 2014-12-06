@@ -73,6 +73,7 @@ def start_fba(args):
 		args.insert(0, wine)
 
 	try:
+		logging.debug("RUNNING %s" % args)
 		p = Popen(args)
 	except OSError:
 		print >>sys.stderr, "Can't execute", FBA
@@ -258,6 +259,28 @@ def killGgpoFba():
 		except:
 			pass
 
+
+def registerUriHandler():
+
+	from _winreg import *
+	regKeys = []
+	regKeys.append(['Software\\Classes\\fightcade', '', 'URL:fightcade Protocol'])
+	regKeys.append(['Software\\Classes\\fightcade', 'URL Protocol', ""])
+	regKeys.append(['Software\\Classes\\fightcade\\shell', '', None])
+	regKeys.append(['Software\\Classes\\fightcade\\shell\\open', '',  None])
+
+	for key,name,val in regKeys:
+		registryKey = CreateKey(HKEY_CURRENT_USER, key)
+		SetValueEx(registryKey, name, 0, REG_SZ, val)
+		CloseKey(registryKey)
+
+	regKeysU = []
+	regKeysU.append(['Software\\Classes\\fightcade\\shell\\open\\command',  '', os.path.abspath(sys.argv[0])+' "%1"'])
+	for key,name,val in regKeysU:
+		registryKey = CreateKey(HKEY_CURRENT_USER, key)
+		SetValueEx(registryKey, name, 0, REG_SZ, val)
+		CloseKey(registryKey)
+
 def process_checker(q):
 
 	time.sleep(15)
@@ -282,6 +305,9 @@ def main():
 	if len(args)>0:
 		quark=args[0]
 
+	if platform.system()=="Windows":
+		registerUriHandler()
+
 	if quark.startswith('quark:served'):
 		q = Queue.Queue()
 		t = threading.Thread(target=process_checker, args=(q,))
@@ -289,17 +315,36 @@ def main():
 		t.start()
 		udp_proxy(args,q)
 		t.join()
+	elif quark.startswith('fightcade://challenge-'):
+		try:
+			quarkid=quark.split('/')[2].split('@')[0]
+			game=quark.split('/')[2].split('@')[1]
+			args=['quark:stream,'+game+','+quarkid+',7000', '-w']
+		except:
+			pass
+		start_fba(args)
+	elif quark.startswith('challenge-'):
+		try:
+			quarkid=quark.split('@')[0]
+			game=quark.split('@')[1]
+			args=['quark:stream,'+game+','+quarkid+',7000', '-w']
+		except:
+			pass
+		start_fba(args)
 	else:
 		start_fba(args)
 
 if __name__ == "__main__":
 
+	log = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "ggpofba.log")
+	errorlog = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "ggpofba-errors.log")
+
 	try:
 		#loglevel=logging.DEBUG
 		loglevel=logging.INFO
-		logging.basicConfig(filename='ggpofba.log', filemode='w', level=loglevel, format='%(asctime)s:%(levelname)s:%(message)s')
+		logging.basicConfig(filename=log, filemode='w', level=loglevel, format='%(asctime)s:%(levelname)s:%(message)s')
 
 		main()
 	except:
-		traceback.print_exc(file=open("ggpofba-errors.log","w"))
+		traceback.print_exc(file=open(errorlog,"w"))
 		os._exit(1)
