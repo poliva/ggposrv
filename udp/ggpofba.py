@@ -183,11 +183,11 @@ def udp_proxy(args,q):
 		# try to punch the hole using a new ip:port mapping that has never reached another destination
 		n_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 		try:
-			logging.info("Listening on 0.0.0.0:6003/udp")
-			n_sockfd.bind(("0.0.0.0", 6003))
+			logging.info("Listening on 0.0.0.0:6004/udp")
+			n_sockfd.bind(("0.0.0.0", 6004))
 		except socket.error:
-			logging.info("Error listening on 0.0.0.0:6003/udp")
-		punch_ok, port = puncher(n_sockfd, target[0], 6003)
+			logging.info("Error listening on 0.0.0.0:6004/udp")
+		punch_ok, port = puncher(n_sockfd, target[0], 6004)
 		restricted_nat=True
 
 	if not punch_ok:

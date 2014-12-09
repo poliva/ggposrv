@@ -3,4 +3,4 @@
 * add SSL support on login
 * make a player profile web front-end with replay id's
 	- setting for public/private replays
-	- setting to turn off city geo-location (display only country)
+* add anti-spam for challenges to avoid challenge-spam
