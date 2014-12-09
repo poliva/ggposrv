@@ -222,7 +222,7 @@ def udp_proxy(args,q):
 	l_sockfd.setblocking(0)
 	sockfd.setblocking(0)
 
-	logging.debug("setting nonblocking sockets")
+	logging.info("setting nonblocking sockets")
 
 	while True:
 		try:
@@ -236,7 +236,7 @@ def udp_proxy(args,q):
 				if peerdata:
 					l_sockfd.sendto( peerdata, emuaddr )
 		except:
-			logging.debug("exit loop")
+			logging.info("exit loop")
 			sockfd.close()
 			l_sockfd.close()
 			os._exit(0)
@@ -262,7 +262,7 @@ def killGgpoFba():
 
 def registerUriHandler():
 
-	from _winreg import *
+	from _winreg import CreateKey, SetValueEx, HKEY_CURRENT_USER, REG_SZ, CloseKey
 	regKeys = []
 	regKeys.append(['Software\\Classes\\fightcade', '', 'URL:fightcade Protocol'])
 	regKeys.append(['Software\\Classes\\fightcade', 'URL Protocol', ""])
@@ -293,7 +293,7 @@ def process_checker(q):
 		#print "FBA STATUS:", str(fba_status)
 		#logging.debug("FBA STATUS: %s" % str(fba_status))
 		if fba_status!=None:
-			logging.debug("killing process")
+			logging.info("killing process")
 			os._exit(0)
 
 def main():
