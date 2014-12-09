@@ -1506,11 +1506,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_ack(sequence)
 
 		# allow "System" user to send broadcast messages to *ALL* connected users
+		negseq=4294967294 #'\xff\xff\xff\xfe'
+		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
 		if (self.nick=="System"):
 			for client in self.server.clients.values():
 				if client.clienttype=="client":
-					negseq=4294967294 #'\xff\xff\xff\xfe'
-					response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
 					logging.debug('to %s: %r' % (client.client_ident(), response))
 					client.send_queue.append(response)
 			return
@@ -1528,12 +1528,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		self.lastmsg = timestamp
 
+		negseq=4294967294 #'\xff\xff\xff\xfe'
+		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
+		self.send_queue.append(response)
 		for client in channel.clients:
 			# Send message to all client in the channel
-			negseq=4294967294 #'\xff\xff\xff\xfe'
-			response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
-			logging.debug('to %s: %r' % (client.client_ident(), response))
-			client.send_queue.append(response)
+			if client != self:
+				logging.debug('to %s: %r' % (client.client_ident(), response))
+				client.send_queue.append(response)
 
 	def handle_part(self, params):
 		"""
