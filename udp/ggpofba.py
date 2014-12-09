@@ -178,13 +178,29 @@ def udp_proxy(args,q):
 	punch_ok, port = puncher(sockfd, target[0], target[1])
 	logging.info ("Puncher result: %s" % punch_ok)
 
+	restricted_nat=False
+	if not punch_ok:
+		# try to punch the hole using a new ip:port mapping that has never reached another destination
+		n_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+		try:
+			logging.info("Listening on 0.0.0.0:6003/udp")
+			n_sockfd.bind(("0.0.0.0", 6003))
+		except socket.error:
+			logging.info("Error listening on 0.0.0.0:6003/udp")
+		punch_ok, port = puncher(n_sockfd, target[0], 6003)
+		restricted_nat=True
+
 	if not punch_ok:
 		# tell the server that this quark must use ports
 		logging.info("Puncher failed. Using ports.")
 		sockfd.sendto( "useports/"+quark, master)
 
+	if restricted_nat:
+		sockfd.close()
+		sockfd=n_sockfd
+
 	if port!=target[1]:
-		logging.info("remote end uses symmetric or restricted nat. Changing port from %d to %d." % (target[1], port))
+		logging.info("Changing remote port from %d to %d." % (target[1], port))
 		target = (target[0], port)
 
 	fba_pid=start_fba(args)
@@ -201,6 +217,7 @@ def udp_proxy(args,q):
 	except socket.timeout:
 		logging.info("timeout waiting for emulator")
 		emuaddr = ('127.0.0.1', 6000)
+		emudata=''
 
 	if emudata:
 		logging.debug("sending data to target %s = %r" % (target, emudata))
@@ -210,7 +227,7 @@ def udp_proxy(args,q):
 		peerdata, peeraddr = sockfd.recvfrom(16384)
 		logging.debug("first request from peer at %s = %r" % (peeraddr, peerdata))
 		logging.debug("peer %s , target %s" % (peeraddr, target))
-		if peerdata and "ok" not in peerdata:
+		if peerdata and " ok" not in peerdata and " _" not in peerdata:
 			logging.debug("sending data to emulator %s = %r" % (emuaddr, peerdata))
 			l_sockfd.sendto( peerdata, emuaddr )
 	except:
@@ -233,7 +250,7 @@ def udp_proxy(args,q):
 					sockfd.sendto( emudata, target )
 			if sockfd in rfds:
 				peerdata, peeraddr = sockfd.recvfrom(16384)
-				if peerdata:
+				if peerdata and " ok" not in peerdata and " _" not in peerdata:
 					l_sockfd.sendto( peerdata, emuaddr )
 		except:
 			logging.info("exit loop")
