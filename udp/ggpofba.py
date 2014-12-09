@@ -227,6 +227,12 @@ def udp_proxy(args,q):
 		peerdata, peeraddr = sockfd.recvfrom(16384)
 		logging.debug("first request from peer at %s = %r" % (peeraddr, peerdata))
 		logging.debug("peer %s , target %s" % (peeraddr, target))
+		if peerdata and " _" in peerdata:
+			peerdata, peeraddr = sockfd.recvfrom(16384)
+			logging.debug("request from peer at %s = %r" % (peeraddr, peerdata))
+		if peerdata and " ok" in peerdata:
+			peerdata, peeraddr = sockfd.recvfrom(16384)
+			logging.debug("request from peer at %s = %r" % (peeraddr, peerdata))
 		if peerdata and " ok" not in peerdata and " _" not in peerdata:
 			logging.debug("sending data to emulator %s = %r" % (emuaddr, peerdata))
 			l_sockfd.sendto( peerdata, emuaddr )
@@ -250,7 +256,7 @@ def udp_proxy(args,q):
 					sockfd.sendto( emudata, target )
 			if sockfd in rfds:
 				peerdata, peeraddr = sockfd.recvfrom(16384)
-				if peerdata and " ok" not in peerdata and " _" not in peerdata:
+				if peerdata:
 					l_sockfd.sendto( peerdata, emuaddr )
 		except:
 			logging.info("exit loop")
