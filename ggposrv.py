@@ -1392,7 +1392,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.send_queue.append(self_response)
 
 			response = self.reply(negseq,pdu+pdu2)
-			for client in self.channel.clients:
+			clients = self.channel.clients.copy()
+			for client in clients:
 				# Send message to all client in the channel
 				if client != self:
 					logging.debug('to %s: %r' % (client.client_ident(), response))
@@ -1410,7 +1411,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.finish()
 			return()
 
-		for client in self.channel.clients:
+		clients = self.channel.clients.copy()
+		for client in clients:
 			i=i+1
 
 			pdu+=self.sizepad(client.nick)
@@ -1555,7 +1557,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		response = self.reply(negseq,pdu)
 
-		for client in self.channel.clients:
+		clients = self.channel.clients.copy()
+		for client in clients:
 			if client != self:
 				# Send message to all client in the channel except ourselves
 				logging.debug('to %s: %r' % (client.client_ident(), response))
@@ -1640,7 +1643,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self in self.channel.clients:
 			# Client is gone without properly QUITing or PARTing this
 			# channel.
-			for client in self.channel.clients:
+			clients = self.channel.clients.copy()
+			for client in clients:
 				# if the gone client was playing against someone, update his status
 				if (client.opponent==self.nick):
 					client.opponent=None
