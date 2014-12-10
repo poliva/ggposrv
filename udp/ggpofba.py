@@ -171,6 +171,12 @@ def udp_proxy(args,q):
 		fba_pid=start_fba(args)
 		q.put(fba_pid)
 		return
+	except socket.errror:
+		logging.info("error getting peer address. Using ports.")
+		sockfd.sendto( "useports/"+quark, master)
+		fba_pid=start_fba(args)
+		q.put(fba_pid)
+		return
 
 	target = bytes2addr(data)
 	logging.debug("connected to %s:%d" % target)
