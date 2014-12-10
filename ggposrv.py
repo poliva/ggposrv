@@ -63,7 +63,7 @@ try:
 except:
 	pass
 
-VERSION=17
+VERSION=18
 
 MIN_CLIENT_VERSION=34
 
