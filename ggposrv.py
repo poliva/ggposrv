@@ -1028,8 +1028,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		client = self.get_client_from_nick(nick)
 
+		# if we can't find the client, tell the user that this client has parted:
+		if client == self and nick!=self.nick:
+			negseq=4294967293 #'\xff\xff\xff\xfd'
+			pdu=''
+			pdu+='\x00\x00\x00\x01' #unk1
+			pdu+='\x00\x00\x00\x00' #unk2
+			pdu+=self.sizepad(nick)
+			response = self.reply(negseq,pdu)
+			self.send_queue.append(response)
+
 		# check that user is connected, in available state and in the same channel, and we're not playing
-		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick):
+		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick and client!=self):
 
 			# send ACK to the initiator of the challenge request
 			self.send_ack(sequence)
