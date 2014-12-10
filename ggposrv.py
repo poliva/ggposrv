@@ -1338,64 +1338,65 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			logging.info('[%s]: trying to set invalid status: %d , self.status=%d, sequence=%d, self.opponent=%s' % (self.client_ident(), status, self.status, sequence, self.opponent))
 			return
 
-		negseq=4294967293 #'\xff\xff\xff\xfd'
-		pdu2=''
-		pdu='\x00\x00\x00\x01'
-		pdu+='\x00\x00\x00\x01'
-		pdu+=self.sizepad(self.nick)
-		pdu+=self.pad2hex(self.status) #status
-		if (self.opponent!=None):
-			pdu+=self.sizepad(self.opponent)
-		else:
-			pdu+='\x00\x00\x00\x00'
-		pdu+=self.sizepad(str(self.host[0]))
-		pdu+='\x00\x00\x00\x00' #unk1
-		pdu+='\x00\x00\x00\x00' #unk2
-		pdu+=self.sizepad(self.city)
-		pdu+=self.sizepad(self.cc)
-		pdu+=self.sizepad(self.country)
-		pdu+=self.pad2hex(self.port)      # port
-		if (self.opponent!=None):
-			client = self.get_client_from_nick(self.opponent)
-			pdu2+='\x00\x00\x00\x01'
-			pdu2+=self.sizepad(client.nick)
-			pdu2+=self.pad2hex(client.status)
-			pdu2+=self.sizepad(client.opponent)
-			pdu2+=self.sizepad(str(client.host[0]))
-			pdu2+='\x00\x00\x00\x00' #unk1
-			pdu2+='\x00\x00\x00\x00' #unk2
-			pdu2+=self.sizepad(client.city)
-			pdu2+=self.sizepad(client.cc)
-			pdu2+=self.sizepad(client.country)
-			pdu2+=self.pad2hex(client.port)      # port
-
-		response = self.reply(negseq,pdu+pdu2)
-
 		if self.clienttype=="client":
-			for client in self.channel.clients:
-				# Send message to all client in the channel
-				if client != self:
-					logging.debug('to %s: %r' % (client.client_ident(), response))
-					client.send_queue.append(response)
 
-			# fix for crappy routers that change their own public ip address to something else
+			negseq=4294967293 #'\xff\xff\xff\xfd'
+			pdu2=''
 			pdu='\x00\x00\x00\x01'
 			pdu+='\x00\x00\x00\x01'
 			pdu+=self.sizepad(self.nick)
-			pdu+=self.pad2hex(self.status) #status
+			pdu+=self.pad2hex(self.status)
 			if (self.opponent!=None):
 				pdu+=self.sizepad(self.opponent)
 			else:
 				pdu+='\x00\x00\x00\x00'
-			pdu+=self.sizepad("127.0.0.1")
+			pdu+=self.sizepad(str(self.host[0]))
 			pdu+='\x00\x00\x00\x00' #unk1
 			pdu+='\x00\x00\x00\x00' #unk2
 			pdu+=self.sizepad(self.city)
 			pdu+=self.sizepad(self.cc)
 			pdu+=self.sizepad(self.country)
-			pdu+=self.pad2hex(self.port)      # port
+			pdu+=self.pad2hex(self.port)
+			if (self.opponent!=None):
+				client = self.get_client_from_nick(self.opponent)
+				pdu2+='\x00\x00\x00\x01'
+				pdu2+=self.sizepad(client.nick)
+				pdu2+=self.pad2hex(client.status)
+				pdu2+=self.sizepad(client.opponent)
+				pdu2+=self.sizepad(str(client.host[0]))
+				pdu2+='\x00\x00\x00\x00' #unk1
+				pdu2+='\x00\x00\x00\x00' #unk2
+				pdu2+=self.sizepad(client.city)
+				pdu2+=self.sizepad(client.cc)
+				pdu2+=self.sizepad(client.country)
+				pdu2+=self.pad2hex(client.port)
+
+			# fix for crappy routers that change their own public ip address to something else
+			pdu1='\x00\x00\x00\x01'
+			pdu1+='\x00\x00\x00\x01'
+			pdu1+=self.sizepad(self.nick)
+			pdu1+=self.pad2hex(self.status)
+			if (self.opponent!=None):
+				pdu1+=self.sizepad(self.opponent)
+			else:
+				pdu1+='\x00\x00\x00\x00'
+			pdu1+=self.sizepad("127.0.0.1")
+			pdu1+='\x00\x00\x00\x00' #unk1
+			pdu1+='\x00\x00\x00\x00' #unk2
+			pdu1+=self.sizepad(self.city)
+			pdu1+=self.sizepad(self.cc)
+			pdu1+=self.sizepad(self.country)
+			pdu1+=self.pad2hex(self.port)
+
+			self_response = self.reply(negseq,pdu1+pdu2)
+			self.send_queue.append(self_response)
+
 			response = self.reply(negseq,pdu+pdu2)
-			self.send_queue.append(response)
+			for client in self.channel.clients:
+				# Send message to all client in the channel
+				if client != self:
+					logging.debug('to %s: %r' % (client.client_ident(), response))
+					client.send_queue.append(response)
 
 
 	def handle_users(self, params):
