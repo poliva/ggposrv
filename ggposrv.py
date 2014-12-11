@@ -1327,7 +1327,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				#self.request.close()
 				return()
 
-		logging.info("[%s] LOGIN OK. NICK: %s" % (self.client_ident(), nick))
+		logging.info("[%s] LOGIN OK. VERSION: %s NICK: %s" % (self.client_ident(), str(version), nick))
 		self.nick = nick
 		self.server.clients[nick] = self
 		self.port = port
