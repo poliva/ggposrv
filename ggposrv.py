@@ -1324,6 +1324,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				clone.handle_part(clone.channel.name)
 				clone.request.close()
 				self.kick_client(sequence)
+				self.server.clients.pop(nick)
 				#self.request.close()
 				return()
 
