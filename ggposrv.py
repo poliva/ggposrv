@@ -1276,13 +1276,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if createdb==True:
 			cursor.execute("""CREATE TABLE IF NOT EXISTS users (
 						id INTEGER PRIMARY KEY,
-						username TEXT,
+						username TEXT COLLATE NOCASE,
 						password TEXT,
 						salt TEXT,
 						email TEXT,
 						ip TEXT,
 						date TEXT);""")
-			cursor.execute("""CREATE UNIQUE INDEX users_username_idx on users (username);""")
+			cursor.execute("""CREATE UNIQUE INDEX users_username_idx on users (username COLLATE NOCASE);""")
 			# db is empty, kick the user
 			logging.info("[%s] created empty user database" % (self.client_ident()))
 			self.kick_client(sequence)
