@@ -1034,6 +1034,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		client = self.get_client_from_nick(nick)
 
+		challengespam=False
+		timestamp = time.time()
+		if (timestamp-self.lastmsg < 0.70):
+			challengespam=True
+
+		self.lastmsg = timestamp
+
 		# if we can't find the client, tell the user that this client has parted:
 		if client == self and nick!=self.nick:
 			negseq=4294967293 #'\xff\xff\xff\xfd'
@@ -1045,7 +1052,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.send_queue.append(response)
 
 		# check that user is connected, in available state and in the same channel, and we're not playing
-		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick and client!=self):
+		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick and client!=self and challengespam==False):
 
 			# send ACK to the initiator of the challenge request
 			self.send_ack(sequence)
@@ -1067,7 +1074,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0a')
-			logging.info('[%s] challenge NO_ACK: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%r and self.channel=%r and self.channel.name=%r and channel=%r' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel ))
+			logging.info('[%s] challenge NO_ACK: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%r and self.channel=%r and self.channel.name=%r and channel=%r and spam=%s' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel, challengespam ))
 			self.send_queue.append(response)
 
 	def handle_accept(self, params):
