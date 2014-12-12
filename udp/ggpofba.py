@@ -135,10 +135,11 @@ def udp_proxy(args,q):
 		port=7001
 		l_sockfd.bind(("127.0.0.1", port))
 	except socket.error:
-		port=7002
-		l_sockfd.bind(("127.0.0.1", port))
+		logging.info("Can't bind to port 7001, using system assigned port.")
+		l_sockfd.sendto("", ("127.0.0.1", 7001))
+		bindaddr,port=l_sockfd.getsockname()
 
-	logging.debug("listening on 127.0.0.1:%d (udp)" % port)
+	logging.info("listening on 127.0.0.1:%d (udp)" % port)
 
 	#use only the challenge id for the hole punching server
 	quark = args[0].split(",")[2]
@@ -150,12 +151,22 @@ def udp_proxy(args,q):
 	except socket.error:
 		# kill any existing instances of ggpofba here
 		logging.info("Can't bind to port 21112, killing ggpofba.")
+		l_sockfd.close()
+		sockfd.close()
 		killGgpoFba()
 		os._exit(1)
 
-	sockfd.sendto( quark, master )
-	data, addr = sockfd.recvfrom( len(quark)+3 )
-	logging.debug("request received from %s = %r" % (addr, data))
+	sockfd.sendto( quark+"/"+str(port), master )
+	try:
+		data, addr = sockfd.recvfrom( len(quark)+3 )
+		logging.debug("request received from %s = %r" % (addr, data))
+	except:
+		logging.info("Error receiving request from master. Using ports.")
+		sockfd.sendto( "useports/"+quark, master)
+		fba_pid=start_fba(args)
+		q.put(fba_pid)
+		return
+
 	if data != "ok "+quark:
 		print >>sys.stderr, "unable to request!"
 		logging.info("unable to request!")

@@ -163,6 +163,7 @@ class GGPOQuark(object):
 		self.recorded = False
 		self.useports = False
 		self.channel = None
+		self.proxyport = {}
 
 class GGPOClient(SocketServer.BaseRequestHandler):
 	"""
@@ -856,7 +857,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if selfchallenge:
 				pdu+=self.pad2hex(7002)
 			else:
-				pdu+=self.pad2hex(7001)
+				ip = self.host[0]
+				try:
+					port = int(quarkobject.proxyport[ip])
+				except:
+					port = 7001
+				pdu+=self.pad2hex(port)
 
 			if (int(self.host[1])>6009 or int(self.host[1])<6000) and myself.version < 32:
 				myself.useports=True
@@ -2068,7 +2074,14 @@ class MyUDPHandler(SocketServer.BaseRequestHandler):
 			logging.info("[%s:%d] HOLEPUNCH FAILED for quark %s, will use ports" % (self.client_address[0], self.client_address[1], quark))
 
 		if data != "ok" and "useports" not in data:
-			self.quark = data
+			try:
+				self.quark, port = data.split('/')
+			except ValueError:
+				self.quark = data
+				port=7001
+			clientip=self.client_address[0]
+			quarkobject = ggposerver.quarks.setdefault(quark, GGPOQuark(quark))
+			quarkobject.proxyport[clientip]=port
 			sockfd.sendto( "ok "+self.quark, self.client_address )
 			logging.info("[%s:%d] HOLEPUNCH request received for quark: %s" % (self.client_address[0], self.client_address[1], self.quark))
 
