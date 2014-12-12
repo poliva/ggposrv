@@ -131,6 +131,7 @@ def udp_proxy(args,q):
 
 	master = ("fightcade.com", 7000)
 	l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+	bindok=0
 	try:
 		port=7001
 		l_sockfd.bind(("127.0.0.1", port))
@@ -138,6 +139,7 @@ def udp_proxy(args,q):
 		logging.info("Can't bind to port 7001, using system assigned port.")
 		l_sockfd.sendto("", ("127.0.0.1", 7001))
 		bindaddr,port=l_sockfd.getsockname()
+		bindok+=1
 
 	logging.info("listening on 127.0.0.1:%d (udp)" % port)
 
@@ -150,7 +152,11 @@ def udp_proxy(args,q):
 		sockfd.bind(("0.0.0.0", 21112))
 	except socket.error:
 		# kill any existing instances of ggpofba here
-		logging.info("Can't bind to port 21112, killing ggpofba.")
+		logging.info("Can't bind to port 21112, using system assigned port.")
+		bindok+=1
+
+	if bindok>=2:
+		logging.info("Another instance of ggpofba seems to be running. Killing ggpofba.")
 		l_sockfd.close()
 		sockfd.close()
 		killGgpoFba()
