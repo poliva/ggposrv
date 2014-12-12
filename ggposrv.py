@@ -2087,7 +2087,7 @@ class MyUDPHandler(SocketServer.BaseRequestHandler):
 				self.quark = data
 				port=7001
 			clientip=self.client_address[0]
-			quarkobject = ggposerver.quarks.setdefault(quark, GGPOQuark(quark))
+			quarkobject = ggposerver.quarks.setdefault(quark, GGPOQuark(self.quark))
 			quarkobject.proxyport[clientip]=port
 			sockfd.sendto( "ok "+self.quark, self.client_address )
 			logging.info("[%s:%d] HOLEPUNCH request received for quark: %s" % (self.client_address[0], self.client_address[1], self.quark))
