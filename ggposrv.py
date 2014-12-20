@@ -219,15 +219,17 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.send_queue.append(response)
 
 	def get_client_from_nick(self,nick):
+		try:
+			clients = dict(self.server.clients)
+			for client_nick in clients:
+				if client_nick == nick:
+					return self.server.clients[nick]
 
-		clients = dict(self.server.clients)
-		for client_nick in clients:
-			if client_nick == nick:
-				return self.server.clients[nick]
-
-		for client_nick in self.channel.clients:
-			if client_nick == nick:
-				return self.channel.clients[nick]
+			for client_nick in self.channel.clients:
+				if client_nick == nick:
+					return self.channel.clients[nick]
+		except KeyError:
+			pass
 
 		# if not found, return self
 		logging.info('[%s] WARNING: Could not find client: %s (returning self)' % (self.client_ident(), nick))
