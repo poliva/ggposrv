@@ -675,9 +675,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					os.mkdir(os.path.dirname(quarkfile))
 				except:
 					pass
-			f=open(quarkfile, 'ab')
-			f.write(response)
-			f.close()
+			try:
+				f=open(quarkfile, 'ab')
+				f.write(response)
+				f.close()
+			except IOError:
+				logging.error('[%s] IOError in command savestate' % (self.client_ident()))
 
 	def handle_getnicks(self, params):
 		quark, sequence = params
