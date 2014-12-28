@@ -1770,15 +1770,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					gz_quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-savestate.fs.gz')
 					if not os.path.exists(gz_quarkfile) and os.path.exists(quarkfile):
 						logging.info("[%s] compressing replay data for quark %s" % (self.client_ident(), self.quark))
-						f_out = gzip.open(gz_quarkfile, 'wb')
-						f_in = open(quarkfile, 'rb')
-						f_out.writelines(f_in)
-						f_out.close()
-						f_in.close()
 						try:
+							f_out = gzip.open(gz_quarkfile, 'wb')
+							f_in = open(quarkfile, 'rb')
+							f_out.writelines(f_in)
+							f_out.close()
+							f_in.close()
 							os.unlink(quarkfile)
 						except:
-							pass
+							logging.error('[%s] Error compressing replay data for quark %s' % (self.client_ident(), self.quark))
 
 					# broadcast the quark id for replays
 					quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+str(quarkobject.quark)+'-gamebuffer.fs')
