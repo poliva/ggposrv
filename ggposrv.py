@@ -1887,7 +1887,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['galaxyfg']=GGPOChannel("galaxyfg", "galaxyfg", 'Galaxy Fight - universal warriors')
 		self.channels['ganryu']=GGPOChannel("ganryu", "ganryu", 'Ganryu')
 		self.channels['garou']=GGPOChannel("garou", "garou", 'Garou - mark of the wolves (set 1)', '', 1096)
-		self.channels['garouo']=GGPOChannel("garouo", "garouo", 'Garou - mark of the wolves (set 2)')
+		#self.channels['garouo']=GGPOChannel("garouo", "garouo", 'Garou - mark of the wolves (set 2)')
 		self.channels['ghostlop']=GGPOChannel("ghostlop", "ghostlop", 'Ghostlop [Prototype]')
 		self.channels['ghouls']=GGPOChannel("ghouls", "ghouls", "Ghouls'n Ghosts (World)", '', 736)
 		self.channels['gigawing']=GGPOChannel("gigawing", "gigawing", 'Giga Wing (990222 USA)')
