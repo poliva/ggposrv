@@ -151,16 +151,15 @@ def udp_proxy(args,q):
 	try:
 		sockfd.bind(("0.0.0.0", 21112))
 	except socket.error:
-		# kill any existing instances of ggpofba here
 		logging.info("Can't bind to port 21112, using system assigned port.")
 		bindok+=1
 
 	if bindok>=2:
-		logging.info("Another instance of ggpofba seems to be running. Killing ggpofba.")
-		l_sockfd.close()
-		sockfd.close()
-		killGgpoFba()
-		os._exit(1)
+		logging.info("WARNING: Another instance of ggpofba seems to be running.")
+		#l_sockfd.close()
+		#sockfd.close()
+		#killGgpoFba()
+		#os._exit(1)
 
 	sockfd.sendto( quark+"/"+str(port), master )
 	try:
