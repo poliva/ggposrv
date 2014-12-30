@@ -129,7 +129,7 @@ def puncher(sock, remote_host, port):
 
 def udp_proxy(args,q):
 
-	master = ("fightcade.com", 7000)
+	master = ("ggpo-ng.com", 7000)
 	l_sockfd = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 	bindok=0
 	try:
