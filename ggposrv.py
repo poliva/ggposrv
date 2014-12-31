@@ -65,7 +65,7 @@ except:
 
 VERSION=19
 
-MIN_CLIENT_VERSION=34
+MIN_CLIENT_VERSION=39
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
