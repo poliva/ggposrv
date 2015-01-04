@@ -1560,7 +1560,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			return
 
 		timestamp = time.time()
-		if (timestamp-self.lastmsg < 0.70):
+		if (timestamp-self.lastmsg < 0.70 or len(msg) > 1000):
 			nick="System"
 			msg="Please do not spam"
 			negseq=4294967294 #'\xff\xff\xff\xfe'
