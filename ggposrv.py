@@ -880,11 +880,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 				if int(self.host[1])>6009 or int(self.host[1])<6000 and myself!=None:
 					msg="Looks like FightCade is having problems doing NAT traversal on your connection.\n"
-					msg+="If you can't connect try opening GGPO ports on your router"
-					if (myself.version < 37):
-						msg+=" and update to the latest version of FightCade."
-					else:
-						msg+="."
+					msg+="If you can't connect try opening GGPO ports on your router (6000 to 6009 udp)."
 					myself.warnmsg=msg
 					# warn the other peer that he's innocent:
 					if int(peer.host[1])<=6009 and int(peer.host[1])>=6000 and quarkobject!=None:
@@ -892,23 +888,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 						if peer_nick==None or peer_nick=='':
 							peer_nick="your peer"
 						msg="Looks like "+str(peer_nick)+" has problems connecting (problem is on his side, not on yours).\n"
-						msg+="If you can't connect with him try opening GGPO ports on your router"
+						msg+="If you can't connect with him try opening GGPO ports on your router (6000 to 6009 udp)."
 						if quarkobject.p1client==myself and quarkobject.p2client!=None:
-							if (quarkobject.p2client.version < 37):
-								msg+=" and update to the latest version of FightCade."
-							else:
-								msg+="."
 							quarkobject.p2client.warnmsg=msg
 						elif quarkobject.p2client==myself and quarkobject.p1client!=None:
-							if (quarkobject.p1client.version < 37):
-								msg+=" and update to the latest version of FightCade."
-							else:
-								msg+="."
 							quarkobject.p1client.warnmsg=msg
 
 				if int(peer.host[1])>6009 or int(peer.host[1])<6000 and quarkobject!=None:
 					msg="Looks like FightCade is having problems doing NAT traversal on your connection.\n"
-					msg+="If you can't connect try opening GGPO ports on your router."
+					msg+="If you can't connect try opening GGPO ports on your router (6000 to 6009 udp)."
 					if quarkobject.p1client==myself and quarkobject.p2client!=None:
 						quarkobject.p2client.warnmsg=msg
 					elif quarkobject.p2client==myself and quarkobject.p1client!=None:
@@ -919,7 +907,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 						if peer_nick==None or peer_nick=='':
 							peer_nick="your peer"
 						msg="Looks like "+str(peer_nick)+" has problems connecting (problem is on his side, not on yours).\n"
-						msg+="If you can't connect with him try opening GGPO ports on your router."
+						msg+="If you can't connect with him try opening GGPO ports on your router (6000 to 6009 udp)."
 						myself.warnmsg=msg
 
 			pdu=self.sizepad(peer.host[0])
