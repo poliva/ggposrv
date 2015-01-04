@@ -1265,9 +1265,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
-	def kick_client(self, sequence):
+	def kick_client(self, sequence, error=6):
 		# auth unsuccessful
-		response = self.reply(sequence,'\x00\x00\x00\x06')
+		response = self.reply(sequence,self.pad2hex(error))
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 		#self.finish()
@@ -1303,7 +1303,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			cursor.execute("""CREATE UNIQUE INDEX users_username_idx on users (username COLLATE NOCASE);""")
 			# db is empty, kick the user
 			logging.info("[%s] created empty user database" % (self.client_ident()))
-			self.kick_client(sequence)
+			self.kick_client(sequence,4)
 			conn.commit()
 			conn.close()
 			return
@@ -1315,7 +1315,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (salt==None):
 			# user doesn't exist into database
 			logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
-			self.kick_client(sequence)
+			self.kick_client(sequence,4)
 			conn.close()
 			return
 
@@ -1329,7 +1329,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (result[0] != 1):
 			# wrong password
 			logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
-			self.kick_client(sequence)
+			self.kick_client(sequence,6)
 			return
 
 		if nick in self.server.clients:
@@ -1337,14 +1337,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			clone = self.get_client_from_nick(nick)
 			if clone != self:
 				logging.info("[%s] someone else is using the nick: %s (%s)" % (self.client_ident(), nick, clone.client_ident()))
-				#self.server.clients.pop(nick)
+				self.server.clients.pop(nick)
 				# remove the clone from channel
 				clone.handle_part(clone.channel.name)
 				clone.request.close()
-				#self.kick_client(sequence)
+				self.kick_client(sequence,8)
 				#self.server.clients.pop(nick)
 				#self.request.close()
-				#return()
+				return()
 
 		logging.info("[%s] LOGIN OK. VERSION: %s NICK: %s" % (self.client_ident(), str(version), nick))
 		self.nick = nick
