@@ -588,7 +588,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				pass
 
 		# record match for future broadcast
-		quarkobject = self.server.quarks[quark]
+		try:
+			quarkobject = self.server.quarks[quark]
+		except KeyError:
+			return()
+
 		if self.check_quark_format(quark) and quarkobject.recorded == False:
 			quarkobject.recorded=True
 
