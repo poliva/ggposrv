@@ -112,6 +112,17 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 				if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None:
 					quarks=quarks+1
 			out["games"]=quarks
+			spectators=0
+			connections = dict(ggposerver.connections)
+			for host in connections:
+				try:
+					client = ggposerver.connections[host]
+					if client.clienttype=="spectator":
+						spectators+=1
+				except:
+					pass
+			out["spectators"]=spectators
+			out["connections"]=len(ggposerver.connections)+len(ggposerver.clients)
 
 		res = json.dumps(out, indent=4, sort_keys=True);
 		self.wfile.write(res)
