@@ -1646,6 +1646,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		elif quarks>1:
 			motd+='-!- There are '+str(quarks)+' ongoing games.\n'
 
+		spectators=0
+		connections = dict(self.server.connections)
+		for host in connections:
+			try:
+				client = self.server.connections[host]
+				if client.clienttype=="spectator":
+					spectators+=1
+			except:
+				pass
+
+		motd+='-!- There are '+str(spectators)+' spectators.\n'
+
 		return motd
 
 	def handle_dump(self):
