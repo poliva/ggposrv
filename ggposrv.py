@@ -124,6 +124,19 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 			out["spectators"]=spectators
 			out["connections"]=len(ggposerver.connections)+len(ggposerver.clients)
 
+		if path == "/clean":
+			for client in ggposerver.clients.values():
+				if client.status==1:
+					cli={}
+					cli["status"]=client.status
+					cli["channel"]=client.channel.name
+					cli["cc"]=client.cc
+					cli["version"]=client.version
+					out[client.nick]=cli
+					client.handle_part(client.channel.name)
+					client.request.close()
+					ggposerver.clients.pop(client.nick)
+
 		res = json.dumps(out, indent=4, sort_keys=True);
 		self.wfile.write(res)
 
