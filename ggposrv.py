@@ -56,6 +56,7 @@ import gzip
 import traceback
 import threading
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+import urlparse
 try:
 	# http://dev.maxmind.com/geoip/geoip2/geolite2/
 	import geoip2.database
@@ -63,7 +64,7 @@ try:
 except:
 	pass
 
-VERSION=19
+VERSION=20
 
 MIN_CLIENT_VERSION=39
 
@@ -72,6 +73,10 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 	def print_dump(self):
 
 		path = self.path
+		if '?' in path:
+			path, tmp = path.split('?', 1)
+		o = urlparse.urlparse(self.path)
+		qs = urlparse.parse_qs(o.query)
 		out={}
 
 		if path == "/channels":
@@ -81,12 +86,14 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 					out[channel.name].append(client.nick)
 
 		if path == "/clients":
+			timestamp = time.time()
 			for client in ggposerver.clients.values():
 				cli={}
 				cli["status"]=client.status
 				cli["channel"]=client.channel.name
 				cli["quark"]=client.quark
 				#cli["city"]=client.city
+				cli["idle"]=int(timestamp-client.lastmsg)
 				cli["country"]=client.country
 				cli["cc"]=client.cc
 				cli["version"]=client.version
@@ -125,17 +132,31 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 			out["connections"]=len(ggposerver.connections)+len(ggposerver.clients)
 
 		if path == "/clean":
+			try:
+				limit=int(qs['limit'][0])
+			except:
+				limit=1000
+			try:
+				idle=int(qs['idle'][0])
+			except:
+				idle=0
+			num=0
+			timestamp = time.time()
 			for client in ggposerver.clients.values():
-				if client.status==1:
+				if num >= limit:
+					break
+				if client.status==1 and timestamp-client.lastmsg > idle:
 					cli={}
 					cli["status"]=client.status
 					cli["channel"]=client.channel.name
 					cli["cc"]=client.cc
+					cli["idle"]=int(timestamp-client.lastmsg)
 					cli["version"]=client.version
 					out[client.nick]=cli
 					client.handle_part(client.channel.name)
 					client.request.close()
 					ggposerver.clients.pop(client.nick)
+					num+=1
 
 		res = json.dumps(out, indent=4, sort_keys=True);
 		self.wfile.write(res)
@@ -1387,6 +1408,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.clienttype="client"
 		self.cc, self.country, self.city = self.geolocate(self.host[0])
 		self.version = version
+		timestamp = time.time()
+		self.lastmsg = timestamp
 
 		# auth successful
 		self.send_ack(sequence)
