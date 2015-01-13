@@ -140,12 +140,16 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 				idle=int(qs['idle'][0])
 			except:
 				idle=0
+			try:
+				status=int(qs['status'][0])
+			except:
+				status=1
 			num=0
 			timestamp = time.time()
 			for client in ggposerver.clients.values():
 				if num >= limit:
 					break
-				if client.status==1 and timestamp-client.lastmsg > idle:
+				if client.status==status and timestamp-client.lastmsg > idle and client.nick!='pof':
 					cli={}
 					cli["status"]=client.status
 					cli["channel"]=client.channel.name
