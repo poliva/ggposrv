@@ -989,6 +989,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_spectator(self,params):
 		quark, sequence = params
 
+		# make sure the quark format is valid
+		if not self.check_quark_format(quark):
+			self.request.close()
+			return()
+
+		# a match can only be spectated once from the same ip
+		connections = dict(self.server.connections)
+		for host in connections:
+			try:
+				client = self.server.connections[host]
+				if client.clienttype=="spectator" and client.host[0]==self.host[0] and client.quark==quark:
+					logging.info('[%s] kicking spectator trying to watch a duplicate quark: %s' % (self.client_ident(), quark))
+					self.request.close()
+					return()
+			except:
+				pass
+
 		try:
 			quarkobject = self.server.quarks[quark]
 		except KeyError:
