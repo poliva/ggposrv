@@ -515,7 +515,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		while True:
 			try:
 				ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
-			except:
+			except Exception, e:
+				logging.error('[%s] ERROR: %s' % (self.client_ident(), e))
 				break
 
 			# Write any commands to the client
