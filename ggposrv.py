@@ -244,7 +244,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
 
 		request.setblocking(0)
-		self.epoll = server.epoll
+		self.epoll = epoll
 		self.epoll.register(request.fileno(), select.EPOLLIN)
 
 		SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
@@ -2162,10 +2162,6 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.connections = {} # Connected unauthenticated clients (GGPOClient instances) by host
 		self.quarks = {} # quark games (GGPOQuark instances) by quark
 
-		self.epoll = select.epoll()
-		#self.socket.setblocking(0)
-		#self.epoll.register(self.socket.fileno())
-
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
 class RendezvousUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
@@ -2384,6 +2380,10 @@ if __name__ == "__main__":
 			t.start()
 
 		ggposerver = GGPOServer((options.listen_address, int(options.listen_port)), GGPOClient)
+		epoll = select.epoll()
+		ggposerver.socket.setblocking(0)
+		epoll.register(ggposerver.socket.fileno())
+
 		logging.info('Starting ggposrv on %s:%s/tcp' % (options.listen_address, options.listen_port))
 
 		if options.httpserver:
