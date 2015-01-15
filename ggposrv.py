@@ -243,6 +243,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
 
+		request.setblocking(0)
+		self.epoll = server.epoll
+		self.epoll.register(request.fileno(), select.EPOLLIN)
+
 		SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
 
 	def pad2hex(self,l):
@@ -513,48 +517,69 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		data=''
 		while True:
-			try:
-				ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
-			except Exception, e:
-				logging.error('[%s] ERROR: %s' % (self.client_ident(), e))
-				break
+			#try:
+			#	ready_to_read, ready_to_write, in_error = select.select([self.request], [], [], 0.1)
+			#except Exception, e:
+			#	logging.error('[%s] ERROR: %s' % (self.client_ident(), e))
+			#	break
 
-			# Write any commands to the client
-			while self.send_queue:
-				msg = self.send_queue.pop(0)
-				#logging.debug('[SEND] to %s: %r' % (self.client_ident(), msg))
-				try:
-					self.request.send(msg)
-				except:
-					logging.info('[%s] Can\'t send data. Finishing ' % (self.client_ident(), ))
-					self.finish()
+			#time.sleep(1)
+			#events = self.epoll.poll(1)
+			events = self.epoll.poll()
+			print 'Polling %d events' % len(events)
+			for fileno, event in events:
+				print 'Events: ', events
+				#if fileno == self.request.fileno():
+					#print "FILENO"
+					#self.request.setblocking(0)
+					#sk, addr = self.request.accept()
+					#sk.setblocking(0)
+					#self.epoll.register(fileno, select.EPOLLIN)
+				#elif event & select.EPOLLIN:
+				if event & select.EPOLLIN and fileno==self.request.fileno():
+					print "<EPOLLIN FILENO: %d SELF_FILENO: %d >" % (fileno, self.request.fileno())
+					# See if the client has any commands for us.
+					try:
+						dataread=self.request.recv(16384)
+						data+=dataread
 
-			# See if the client has any commands for us.
-			if len(ready_to_read) == 1 and ready_to_read[0] == self.request:
-				try:
-					dataread=self.request.recv(16384)
-					data+=dataread
+						if not dataread:
+							#break
+							self.epoll.unregister(fileno)
+							self.finish()
+						#logging.debug('[RECV] from %s: %r' % (self.client_ident(), data))
 
-					if not dataread:
-						break
-					#logging.debug('[RECV] from %s: %r' % (self.client_ident(), data))
+						while (len(data)-4 > int(data[0:4].encode('hex'),16)):
+							length=int(data[0:4].encode('hex'),16)
+							response = self.parse(data[0:length+4])
+							data=data[length+4:]
 
-					while (len(data)-4 > int(data[0:4].encode('hex'),16)):
-						length=int(data[0:4].encode('hex'),16)
-						response = self.parse(data[0:length+4])
-						data=data[length+4:]
+						if len(data)-4 == int(data[0:4].encode('hex'),16):
+							response = self.parse(data)
+							data=''
 
-					if len(data)-4 == int(data[0:4].encode('hex'),16):
-						response = self.parse(data)
-						data=''
+					except Exception, e:
+						logging.info('[%s] Can\'t read data. Finishing. ERROR: %s' % (self.client_ident(), repr(e)))
+						#self.finish()
+						pass
 
-						if response:
-							logging.debug('<<<<<<>>>>>to %s: %r' % (self.client_ident(), response))
-							#self.request.send(response)
+					self.epoll.modify(fileno, select.EPOLLOUT)
+					print "</EPOLLIN>"
 
-				except Exception, e:
-					logging.info('[%s] Can\'t read data. Finishing. ERROR: %s' % (self.client_ident(), repr(e)))
-					self.finish()
+				elif event & select.EPOLLOUT:
+					print "<EPOLLOUT>"
+					# Write any commands to the client
+					while self.send_queue:
+						msg = self.send_queue.pop(0)
+						#logging.debug('[SEND] to %s: %r' % (self.client_ident(), msg))
+						try:
+							self.request.send(msg)
+						except:
+							logging.info('[%s] Can\'t send data. Finishing ' % (self.client_ident(), ))
+							self.finish()
+
+					self.epoll.modify(fileno, select.EPOLLIN)
+					print "</EPOLLOUT>"
 
 		self.request.close()
 
@@ -2136,6 +2161,11 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.clients = {}  # Connected authenticated clients (GGPOClient instances) by nickname
 		self.connections = {} # Connected unauthenticated clients (GGPOClient instances) by host
 		self.quarks = {} # quark games (GGPOQuark instances) by quark
+
+		self.epoll = select.epoll()
+		#self.socket.setblocking(0)
+		#self.epoll.register(self.socket.fileno())
+
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
 class RendezvousUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
