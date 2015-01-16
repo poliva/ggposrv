@@ -517,22 +517,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		data=''
 		while True:
-			#time.sleep(1)
-			events = self.epoll.poll(0.5)
-			#events = self.epoll.poll()
-			#print 'Polling %d events' % len(events)
-			for fileno, event in events:
-				# Write any commands to the client
-				while self.send_queue:
-					msg = self.send_queue.pop(0)
-					#logging.debug('[SEND] to %s: %r' % (self.client_ident(), msg))
-					try:
-						self.request.send(msg)
-					except:
-						logging.info('[%s] Can\'t send data. Finishing ' % (self.client_ident(), ))
-						self.finish()
+			time.sleep(0.1)
+			# Write any commands to the client
+			while self.send_queue:
+				msg = self.send_queue.pop(0)
+				#logging.debug('[SEND] to %s: %r' % (self.client_ident(), msg))
+				try:
+					self.request.send(msg)
+				except Exception, e:
+					logging.info('[%s] Can\'t send data. Finishing. ERROR: %s' % (self.client_ident(), repr(e)))
+					return
 
-				if event & select.EPOLLIN and fileno==self.request.fileno():
+			events = self.epoll.poll()
+			for fileno, event in events:
+				if fileno==self.request.fileno() and event & select.EPOLLIN:
 					#print "EPOLLIN FILENO: %d SELF_FILENO: %d" % (fileno, self.request.fileno())
 					# See if the client has any commands for us.
 					try:
@@ -540,9 +538,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 						data+=dataread
 
 						if not dataread:
-							#break
+							logging.info('[%s] Can\'t read data. Finishing.' % (self.client_ident()))
 							self.epoll.unregister(fileno)
-							self.finish()
+							return
 						#logging.debug('[RECV] from %s: %r' % (self.client_ident(), data))
 
 						while (len(data)-4 > int(data[0:4].encode('hex'),16)):
@@ -556,14 +554,24 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 					except Exception, e:
 						logging.info('[%s] Can\'t read data. Finishing. ERROR: %s' % (self.client_ident(), repr(e)))
-						#self.finish()
-						pass
+						self.epoll.unregister(fileno)
+						return
 
-					self.epoll.modify(fileno, select.EPOLLOUT)
+					try:
+						self.epoll.modify(fileno, select.EPOLLOUT)
+					except Exception, e:
+						logging.info('[%s] Finishing in EPOLLIN. ERROR: %s' % (self.client_ident(), repr(e)))
+						self.epoll.unregister(fileno)
+						return
 
-				elif event & select.EPOLLOUT and fileno==self.request.fileno():
+				elif fileno==self.request.fileno() and event & select.EPOLLOUT:
 					#print "EPOLLOUT FILENO: %d SELF_FILENO: %d" % (fileno, self.request.fileno())
-					self.epoll.modify(fileno, select.EPOLLIN)
+					try:
+						self.epoll.modify(fileno, select.EPOLLIN)
+					except Exception, e:
+						logging.info('[%s] Finishing in EPOLLOUT. ERROR: %s' % (self.client_ident(), repr(e)))
+						self.epoll.unregister(fileno)
+						return
 
 		self.request.close()
 
