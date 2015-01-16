@@ -1904,11 +1904,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 				if quarkobject.p1==self and self.quark!=None and quarkobject.p2!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
-					self.epoll.unregister(quarkobject.p2.request.fileno())
+					#self.epoll.unregister(quarkobject.p2.request.fileno())
 					quarkobject.p2.request.close()
 				if quarkobject.p2==self and self.quark!=None and quarkobject.p1!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p1.client_ident()))
-					self.epoll.unregister(quarkobject.p1.request.fileno())
+					#self.epoll.unregister(quarkobject.p1.request.fileno())
 					quarkobject.p1.request.close()
 
 			except KeyError, AttributeError:
