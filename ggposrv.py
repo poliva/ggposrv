@@ -517,7 +517,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			logging.info('[%s] Client connected' % (self.client_ident(), ))
 			data=''
 			while True:
-				time.sleep(0.1)
+				time.sleep(0.4)
 				# Write any commands to the client
 				while self.send_queue:
 					msg = self.send_queue.pop(0)
