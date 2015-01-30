@@ -2096,6 +2096,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['sengoku2']=GGPOChannel("sengoku2", "sengoku2", 'Sengoku 2', '', 1096)
 		self.channels['sengoku3']=GGPOChannel("sengoku3", "sengoku3", 'Sengoku 3')
 		self.channels['sengoku']=GGPOChannel("sengoku", "sengoku", 'Sengoku (set 1)')
+		self.channels['sf2']=GGPOChannel("sf2", "sf2", "Street Fighter II - the world warrior (910522 etc)", '', 736)
 		self.channels['sf2ce']=GGPOChannel("sf2ce", "sf2ce", "Street Fighter II' - champion edition (street fighter 2' 920313 etc)", '', 736)
 		self.channels['sf2hf']=GGPOChannel("sf2hf", "sf2hf", "Street Fighter II' - hyper fighting (street fighter 2' T 921209 ETC)", '', 736)
 		self.channels['sf2koryu']=GGPOChannel("sf2koryu", "sf2koryu", "Street Fighter II' - champion edition (Hack - kouryu) [Bootleg]", '', 736)
