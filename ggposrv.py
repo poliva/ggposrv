@@ -144,27 +144,45 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 				status=int(qs['status'][0])
 			except:
 				status=1
+			try:
+				clienttype=str(qs['clienttype'][0])
+			except:
+				clienttype="client"
 			num=0
 			timestamp = time.time()
-			for client in ggposerver.clients.values():
-				if num >= limit:
-					break
-				if client.status==status and timestamp-client.lastmsg > idle and client.nick!='pof':
-					cli={}
-					cli["status"]=client.status
-					cli["channel"]=client.channel.name
-					cli["cc"]=client.cc
-					cli["idle"]=int(timestamp-client.lastmsg)
-					cli["version"]=client.version
-					out[client.nick]=cli
-					client.handle_part(client.channel.name)
-					client.request.close()
-					ggposerver.clients.pop(client.nick)
-					num+=1
+			if clienttype=="client":
+				for client in ggposerver.clients.values():
+					if num >= limit:
+						break
+					if client.status==status and timestamp-client.lastmsg > idle and client.nick!='pof':
+						cli={}
+						cli["status"]=client.status
+						cli["channel"]=client.channel.name
+						cli["cc"]=client.cc
+						cli["idle"]=int(timestamp-client.lastmsg)
+						cli["version"]=client.version
+						out[client.nick]=cli
+						client.handle_part(client.channel.name)
+						client.request.close()
+						ggposerver.clients.pop(client.nick)
+						num+=1
+			if clienttype=="spectator":
+				for host in dict(ggposerver.connections):
+					if num >= limit:
+						break
+					try:
+						client = ggposerver.connections[host]
+						if client.clienttype=="spectator":
+							cli={}
+							cli["quark"]=client.quark
+							out[str(host)]=cli
+							client.request.close()
+							num+=1
+					except KeyError:
+						pass
 
 		res = json.dumps(out, indent=4, sort_keys=True);
 		self.wfile.write(res)
-
 
 	#Handler for the GET requests
 	def do_GET(self):
