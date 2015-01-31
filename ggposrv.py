@@ -1077,7 +1077,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('to %s: %r' % (quarkobject.p2.client_ident(), response))
 		quarkobject.p2.send_queue.append(response)
 
-		for spectator in quarkobject.spectators:
+		for spectator in dict(quarkobject.spectators):
 			spectator.send_queue.append(response)
 
 		# increment realtime views on db
@@ -1108,7 +1108,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		except:
 			pass
 
-		for spectator in quarkobject.spectators:
+		for spectator in dict(quarkobject.spectators):
 			spectator.send_queue.append(response)
 
 	def handle_challenge(self, params):
