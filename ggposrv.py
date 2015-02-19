@@ -2064,7 +2064,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['ninjamas']=GGPOChannel("ninjamas", "ninjamas", "Ninja Master's haoh ninpo cho", '', 1096)
 		self.channels['nitd']=GGPOChannel("nitd", "nitd", 'Nightmare in the Dark')
 		#self.channels['nwarr']=GGPOChannel("nwarr", "nwarr", "Night Warriors - darkstalkers' revenge (950316 Euro)")
-		self.channels['vampj']=GGPOChannel("vampj", "vampj", "Vampire Hunter - The Night Warriors (940705 Japan")
+		self.channels['vampj']=GGPOChannel("vampj", "vampj", "Vampire Hunter - The Night Warriors (940705 Japan)")
 		#self.channels['orlegend']=GGPOChannel("orlegend", "orlegend", 'Oriental Legend')
 		self.channels['overtop']=GGPOChannel("overtop", "overtop", 'OverTop')
 		self.channels['panicbom']=GGPOChannel("panicbom", "panicbom", 'Panic Bomber')
