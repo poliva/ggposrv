@@ -2286,6 +2286,7 @@ if __name__ == "__main__":
 	parser.add_option("--restart", dest="restart", action="store_true", default=False, help="Restart ggposrv")
 	parser.add_option("-a", "--address", dest="listen_address", action="store", default='0.0.0.0', help="IP to listen on")
 	parser.add_option("-p", "--port", dest="listen_port", action="store", default='7000', help="Port to listen on")
+	parser.add_option("-o", "--logfile", dest="logfile", action="store", default="ggposrv.log", help="log file location")
 	parser.add_option("-V", "--verbose", dest="verbose", action="store_true", default=False, help="Be verbose (show lots of output)")
 	parser.add_option("-l", "--log-stdout", dest="log_stdout", action="store_true", default=False, help="Also log to stdout")
 	parser.add_option("-f", "--foreground", dest="foreground", action="store_true", default=False, help="Do not go into daemon mode.")
@@ -2296,8 +2297,8 @@ if __name__ == "__main__":
 
 	holepunch=options.udpholepunch
 
-	# Paths
-	logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
+	#logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
+	logfile = options.logfile
 
 	#
 	# Logging
