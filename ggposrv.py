@@ -2081,7 +2081,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['rbff2']=GGPOChannel("rbff2", "rbff2", 'Real Bout Fatal Fury 2 - the newcomers (set 1)', '', 1096)
 		self.channels['rbffspec']=GGPOChannel("rbffspec", "rbffspec", 'Real Bout Fatal Fury Special', '', 1096)
 		self.channels['redeartn']=GGPOChannel("redeartn", "redeartn", 'Red Earth')
-		self.channels['ridhero']=GGPOChannel("ridhero", "ridhero", 'Riding Hero (set 1)')
+		#self.channels['ridhero']=GGPOChannel("ridhero", "ridhero", 'Riding Hero (set 1)')
 		self.channels['ringdest']=GGPOChannel("ringdest", "ringdest", 'Ring of Destruction - slammasters II (940902 Euro)', '', 496)
 		self.channels['rotd']=GGPOChannel("rotd", "rotd", 'Rage of the Dragons', '', 1096)
 		self.channels['s1945p']=GGPOChannel("s1945p", "s1945p", 'Strikers 1945 plus')
