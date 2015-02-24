@@ -2155,6 +2155,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['wof']=GGPOChannel("wof", "wof", 'Warriors of Fate (921002 etc)')
 		self.channels['xmcota']=GGPOChannel("xmcota", "xmcota", 'X-Men - children of the atom (950105 Euro)', '', 376)
 		self.channels['xmvsf']=GGPOChannel("xmvsf", "xmvsf", 'X-Men vs Street Fighter (961004 Euro)', '', 376)
+		self.channels['zupapa']=GGPOChannel("zupapa", "zupapa", 'Zupapa!')
 		self.clients = {}  # Connected authenticated clients (GGPOClient instances) by nickname
 		self.connections = {} # Connected unauthenticated clients (GGPOClient instances) by host
 		self.quarks = {} # quark games (GGPOQuark instances) by quark
