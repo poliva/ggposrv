@@ -2060,7 +2060,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['ncommand']=GGPOChannel("ncommand", "ncommand", 'Ninja Commando')
 		self.channels['neobombe']=GGPOChannel("neobombe", "neobombe", 'Neo Bomberman', '', 1096)
 		self.channels['neocup98']=GGPOChannel("neocup98", "neocup98", "Neo-Geo Cup '98 - the road to the victory")
-		self.channels['neodrift']=GGPOChannel("neodrift", "neodrift", 'Neo Drift Out - new technology')
+		#self.channels['neodrift']=GGPOChannel("neodrift", "neodrift", 'Neo Drift Out - new technology')
 		self.channels['ninjamas']=GGPOChannel("ninjamas", "ninjamas", "Ninja Master's haoh ninpo cho", '', 1096)
 		self.channels['nitd']=GGPOChannel("nitd", "nitd", 'Nightmare in the Dark')
 		#self.channels['nwarr']=GGPOChannel("nwarr", "nwarr", "Night Warriors - darkstalkers' revenge (950316 Euro)")
