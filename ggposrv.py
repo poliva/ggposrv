@@ -1570,6 +1570,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu+=self.sizepad(client.country)
 			pdu+=self.pad2hex(client.port)      # port
 
+			if (self.version >= 40):
+				spectators=0
+				if client.quark!=None:
+					try:
+						quarkobject = self.server.quarks[client.quark]
+						spectators=len(quarkobject.spectators)
+					except:
+						pass
+				pdu+=self.pad2hex(spectators)
+
 		response = self.reply(sequence,'\x00\x00\x00\x00'+self.pad2hex(i)+pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
