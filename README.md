@@ -28,4 +28,4 @@ Options:
 </pre>
 
 # Compatibility
-This server is fully compatible with existing GGPO clients and the official GGPOFBA emulator, however if [UDP hole punching](http://www.brynosaurus.com/pub/net/p2pnat/) is enabled the GGPOFBA emulator needs to be proxyied through a [wrapper](https://github.com/poliva/ggposrv/tree/master/udp). The wrapper is available in the udp folder. UDP hole punching is a popular NAT traversal technique that allows to connect two players without having to forward ports on the router, making the setup easier.
+This server is fully compatible with existing GGPO clients and the official GGPOFBA emulator, however if [UDP hole punching](http://www.brynosaurus.com/pub/net/p2pnat/) is enabled the GGPOFBA emulator needs to be proxyied through a [wrapper](https://github.com/poliva/pyqtggpo/tree/master/ggpofba.py). UDP hole punching is a popular NAT traversal technique that allows to connect two players without having to forward ports on the router, making the setup easier.
