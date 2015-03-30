@@ -877,6 +877,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_getpeer(self, params):
 		quark, fbaport, sequence = params
 
+		if replayonly:
+			self.finish()
+			return()
+
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
 
@@ -1355,6 +1359,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		"""
 		nick,password,port,version,sequence = params
 
+		if replayonly:
+			self.finish()
+			return()
+
 		# New connection
 		createdb=False
 		dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
@@ -1617,7 +1625,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		channel_name,sequence = params
 
-		if not channel_name in self.server.channels or self.nick==None:
+		if not channel_name in self.server.channels or self.nick==None or replayonly:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x08')
 			logging.info('[%s] JOIN NO_ACK: %r' % (self.client_ident(), response))
@@ -2281,7 +2289,7 @@ class Daemon:
 
 if __name__ == "__main__":
 
-	global holepunch, ggposerver
+	global holepunch, ggposerver, replayonly
 
 	print "-!- FightCade server version {0:.2f}".format(VERSION/100.0)
 	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
@@ -2296,17 +2304,19 @@ if __name__ == "__main__":
 	parser.add_option("--stop", dest="stop", action="store_true", default=False, help="Stop ggposrv")
 	parser.add_option("--restart", dest="restart", action="store_true", default=False, help="Restart ggposrv")
 	parser.add_option("-a", "--address", dest="listen_address", action="store", default='0.0.0.0', help="IP to listen on")
-	parser.add_option("-p", "--port", dest="listen_port", action="store", default='7000', help="Port to listen on")
+	parser.add_option("-p", "--port", dest="listen_port", action="store", default='7000', help="Port to listen on (default=7000)")
 	parser.add_option("-o", "--logfile", dest="logfile", action="store", default="ggposrv.log", help="log file location")
 	parser.add_option("-V", "--verbose", dest="verbose", action="store_true", default=False, help="Be verbose (show lots of output)")
 	parser.add_option("-l", "--log-stdout", dest="log_stdout", action="store_true", default=False, help="Also log to stdout")
 	parser.add_option("-f", "--foreground", dest="foreground", action="store_true", default=False, help="Do not go into daemon mode.")
 	parser.add_option("-H", "--http", dest="httpserver", action="store_true", default=False, help="Start debug http server on port 8000")
 	parser.add_option("-u", "--udpholepunch", dest="udpholepunch", action="store_true", default=False, help="Use UDP hole punching.")
+	parser.add_option("-r", "--replay", dest="replay", action="store_true", default=False, help="Use the server only for replaying quarks.")
 
 	(options, args) = parser.parse_args()
 
 	holepunch=options.udpholepunch
+	replayonly=options.replay
 
 	#logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
 	logfile = options.logfile
