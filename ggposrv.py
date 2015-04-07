@@ -232,6 +232,19 @@ class GGPOQuark(object):
 		self.channel = None
 		self.proxyport = {}
 
+# http://stackoverflow.com/q/12248132
+def set_keepalive_linux(sock, after_idle_sec=3600, interval_sec=3, max_fails=5):
+	"""Set TCP keepalive on an open socket.
+
+	It activates after 3600 seconds (after_idle_sec) of idleness,
+	then sends a keepalive ping once every 3 seconds (interval_sec),
+	and closes the connection after 5 failed ping (max_fails), or 15 seconds
+	"""
+	sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+	sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
+	sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
+	sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
+
 class GGPOClient(SocketServer.BaseRequestHandler):
 	"""
 	GGPO client connect and command handling. Client connection is handled by
@@ -261,6 +274,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
 
+		set_keepalive_linux(request)
 		SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
 
 	def pad2hex(self,l):
