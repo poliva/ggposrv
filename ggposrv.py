@@ -508,7 +508,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			if command in ["join", "challenge", "decline", "cancel", "accept", "getnicks", "watch", "spectator"]:
 				logging.info('[%s] SEQUENCE: %d COMMAND: %s %s' % (self.client_ident(),sequence,command,params[0]))
-			elif command in ["savestate", "list"]:
+			elif command in ["savestate", "list", "users", "ggpotv"]:
 				logging.debug('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
 			else:
 				logging.info('[%s] SEQUENCE: %d COMMAND: %s' % (self.client_ident(),sequence,command))
