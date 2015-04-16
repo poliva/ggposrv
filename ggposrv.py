@@ -640,6 +640,26 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		peer=self.get_peer_from_quark(quark)
 
+		# send the in-game chat messages to the client
+		# this helps people using experimental blitter that can't see the OSD text
+		try:
+			quarkobject = self.server.quarks[quark]
+			if quarkobject.p1.nick==self.nick:
+				mypeer = quarkobject.p2client
+				myself = quarkobject.p1client
+			else:
+				mypeer = quarkobject.p1client
+				myself = quarkobject.p2client
+
+			negseq=4294967294 #'\xff\xff\xff\xfe'
+			response = self.reply(negseq,self.sizepad("System")+self.sizepad('GAME: <'+self.nick+'> '+msg))
+			logging.debug('to %s: %r' % (mypeer.client_ident(), response))
+			mypeer.send_queue.append(response)
+			logging.debug('to %s: %r' % (myself.client_ident(), response))
+			myself.send_queue.append(response)
+		except:
+			pass
+
 		negseq=4294967288 #'\xff\xff\xff\xf8'
 		pdu=self.sizepad(quark)
 		pdu+=self.sizepad(self.nick)
