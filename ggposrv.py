@@ -57,6 +57,7 @@ import traceback
 import threading
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 import urlparse
+import requests
 try:
 	# http://dev.maxmind.com/geoip/geoip2/geolite2/
 	import geoip2.database
@@ -1686,6 +1687,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		params = self.status,0
 		self.handle_status(params)
+
+		# hook for attendance stats, see: https://github.com/poliva/ggposrv/issues/14
+		try:
+			url = "http://neogeodb.com:8765/players"
+			payload = { "player": str(self.nick), "rom": str(self.channel), "country": str(self.country) }
+			headers = {'content-type': 'application/json'}
+			response = requests.post(url, data=json.dumps(payload), headers=headers)
+		except:
+			logging.info('[%s] ERROR sending attendance stats' % self.client_ident())
 
 	def handle_privmsg(self, params):
 		"""
