@@ -741,13 +741,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							channel TEXT,
 							date TEXT,
 							realtime_views INTEGER,
-							saved_views INTEGER);""")
+							saved_views INTEGER,
+							p1_country CHAR(50),
+							p2_country CHAR(50),
+							duration INTEGER);""")
 				cursor.execute("""CREATE UNIQUE INDEX quarks_quark_idx on quarks (quark);""")
 				logging.info("[%s] created empty quark database" % (self.client_ident()))
 
 			date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-			sql = "INSERT INTO quarks (quark, player1, player2, channel, date, realtime_views, saved_views) VALUES (?,?,?,?,?,0,0)"
-			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date])
+			sql = "INSERT INTO quarks (quark, player1, player2, channel, date, realtime_views, saved_views, p1_country, p2_country, duration) VALUES (?,?,?,?,?,0,0,?,?,0)"
+			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date, quarkobject.p1.cc, quarkobject.p2.cc])
 			conn.commit()
 			conn.close()
 
@@ -1966,6 +1969,26 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							quarkobject.p1client.send_queue.append(response)
 						if (quarkobject.p2client!=None):
 							quarkobject.p2client.send_queue.append(response)
+
+						# update the duration
+						dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
+						conn = sqlite3.connect(dbfile)
+
+						cursor = conn.cursor()
+						sql = "SELECT date FROM quarks WHERE quark=?"
+						cursor.execute(sql, [(quarkobject.quark)])
+						start_date=cursor.fetchone()[0]
+
+						end_date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+						mdate1 = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+						rdate1 = datetime.datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
+						duration = int((rdate1-mdate1).total_seconds())
+
+						sql = "UPDATE quarks SET duration=? WHERE quark=?"
+						cursor.execute(sql, [duration, quarkobject.quark])
+						conn.commit()
+						conn.close()
+
 
 				if quarkobject.p1==self and self.quark!=None and quarkobject.p2!=None:
 					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
