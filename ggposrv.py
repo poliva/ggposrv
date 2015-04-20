@@ -1971,22 +1971,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 							quarkobject.p2client.send_queue.append(response)
 
 						# update the duration
+						end_date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+						rdate1 = datetime.datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
 						dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 						conn = sqlite3.connect(dbfile)
-
 						cursor = conn.cursor()
 						sql = "SELECT date FROM quarks WHERE quark=?"
-						cursor.execute(sql, [(quarkobject.quark)])
-						start_date=cursor.fetchone()[0]
+						try:
+							cursor.execute(sql, [(quarkobject.quark)])
+							start_date=cursor.fetchone()[0]
+							mdate1 = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+							duration = int((rdate1-mdate1).total_seconds())
+							sql = "UPDATE quarks SET duration=? WHERE quark=?"
+							cursor.execute(sql, [duration, quarkobject.quark])
+							conn.commit()
+						except sqlite3.OperationalError:
+							logging.info("[%s] ERROR updating duration" % (self.client_ident()))
 
-						end_date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-						mdate1 = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
-						rdate1 = datetime.datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
-						duration = int((rdate1-mdate1).total_seconds())
-
-						sql = "UPDATE quarks SET duration=? WHERE quark=?"
-						cursor.execute(sql, [duration, quarkobject.quark])
-						conn.commit()
 						conn.close()
 
 
