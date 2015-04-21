@@ -709,17 +709,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			quarkobject.p1client.warnmsg=''
 			quarkobject.p2client.warnmsg=''
 
-			# store initial savestate (gamebuffer)
-			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
-			if not os.path.exists(quarkfile):
-				try:
-					os.mkdir(os.path.dirname(quarkfile))
-				except:
-					pass
-				f=open(quarkfile, 'wb')
-				f.write(response)
-				f.close()
-
 			# store player nicknames
 			createdb=False
 			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
@@ -754,6 +743,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date, quarkobject.p1client.cc, quarkobject.p2client.cc])
 			conn.commit()
 			conn.close()
+
+			# store initial savestate (gamebuffer)
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
+			if not os.path.exists(quarkfile):
+				try:
+					os.mkdir(os.path.dirname(quarkfile))
+				except:
+					pass
+				f=open(quarkfile, 'wb')
+				f.write(response)
+				f.close()
+
 
 
 	def handle_savestate(self, params):
