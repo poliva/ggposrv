@@ -750,7 +750,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				logging.info("[%s] created empty quark database" % (self.client_ident()))
 
 			date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-			sql = "INSERT INTO quarks (quark, player1, player2, channel, date, realtime_views, saved_views, p1_country, p2_country, duration) VALUES (?,?,?,?,?,0,0,?,?,0)"
+			sql = "INSERT INTO quarks (quark, player1, player2, channel, date, realtime_views, saved_views, p1_country, p2_country, duration) VALUES (?,?,?,?,?,0,0,?,?,-1)"
 			cursor.execute(sql, [quark, quarkobject.p1.nick, quarkobject.p2.nick, quarkobject.channel.name, date, quarkobject.p1client.cc, quarkobject.p2client.cc])
 			conn.commit()
 			conn.close()
