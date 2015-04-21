@@ -628,7 +628,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		clients = dict(self.server.clients)
 		for nick in clients:
 			client = self.get_client_from_nick(nick)
-			if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
+			#if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
+			if client.clienttype=="client" and client.quark==quark:
 				return client
 		return self
 
