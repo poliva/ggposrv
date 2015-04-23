@@ -801,7 +801,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				f.write(response)
 				f.close()
 			except IOError:
-				logging.error('[%s] IOError in command savestate' % (self.client_ident()))
+				logging.debug('[%s] IOError in command savestate' % (self.client_ident()))
 
 	def handle_getnicks(self, params):
 		quark, sequence = params
