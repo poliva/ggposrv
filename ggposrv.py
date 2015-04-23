@@ -747,7 +747,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				conn.commit()
 			except:
 				# close the connection if we can't add the quark into the db
-				self.request.close()
+				self.finish()
 			conn.close()
 
 			# store initial savestate (gamebuffer)
@@ -882,7 +882,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 				response = f.read(CHUNKSIZE)
 			f.close()
-			self.request.close()
+			self.finish()
 			return()
 
 		i=0
@@ -1067,7 +1067,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# make sure the quark format is valid
 		if not self.check_quark_format(quark):
-			self.request.close()
+			self.finish()
 			return()
 
 		# a match can only be spectated once from the same ip
@@ -1077,7 +1077,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				client = self.server.connections[host]
 				if client.clienttype=="spectator" and client.host[0]==self.host[0] and client.quark==quark:
 					logging.info('[%s] kicking spectator trying to watch a duplicate quark: %s' % (self.client_ident(), quark))
-					self.request.close()
+					self.finish()
 					return()
 			except:
 				pass
@@ -1482,8 +1482,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				clone.handle_part(clone.channel.name)
 				clone.request.close()
 				self.kick_client(sequence,8)
-				#self.server.clients.pop(nick)
-				#self.request.close()
 				return()
 
 			# check for multiple connections from the same ip address
@@ -1501,7 +1499,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.nick = nick
 			logging.info("[%s] too many connections from host %s" % (self.client_ident(), self.host[0]))
 			self.kick_client(sequence,9)
-			#self.request.close()
 			return()
 
 		logging.info("[%s] LOGIN OK. VERSION: %s NICK: %s" % (self.client_ident(), str(version), nick))
