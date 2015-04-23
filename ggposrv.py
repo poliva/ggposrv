@@ -278,7 +278,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
 
-		set_keepalive_linux(request)
+		try:
+			set_keepalive_linux(request)
+		except:
+			pass
 		SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
 
 	def pad2hex(self,l):
@@ -628,8 +631,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		clients = dict(self.server.clients)
 		for nick in clients:
 			client = self.get_client_from_nick(nick)
-			#if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
-			if client.clienttype=="client" and client.quark==quark:
+			if client.clienttype=="client" and client.quark==quark and client.host[0]==self.host[0]:
 				return client
 		return self
 
