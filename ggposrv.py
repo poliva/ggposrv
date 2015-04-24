@@ -635,6 +635,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				return client
 		return self
 
+	def get_myclient_from_quark_and_peer(self, quark, peer):
+		"""
+		Returns a GGPOClient object representing our own client connection, or self if not found
+		"""
+		clients = dict(self.server.clients)
+		for nick in clients:
+			client = self.get_client_from_nick(nick)
+			if client.clienttype=="client" and client.quark==quark and client.nick!=peer.nick:
+				return client
+		return self
 
 	def handle_fba_privmsg(self, params):
 		"""
@@ -700,6 +710,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		try:
 			quarkobject = self.server.quarks[quark]
 		except KeyError:
+			return()
+
+		if quarkobject.p1.nick==None and quarkobject.p2.nick==None and quarkobject.channel.name=='lobby':
+			self.finish()
 			return()
 
 		if self.check_quark_format(quark) and quarkobject.recorded == False:
@@ -939,11 +953,12 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		quarkobject = self.server.quarks.setdefault(quark, GGPOQuark(quark))
 		myself=self.get_myclient_from_quark(quark)
-		self.side=myself.side
-		self.nick=myself.nick
-		self.useports=myself.useports
-		self.channel=myself.channel
-		quarkobject.channel=myself.channel
+		if self!=myself:
+			self.side=myself.side
+			self.nick=myself.nick
+			self.useports=myself.useports
+			self.channel=myself.channel
+			quarkobject.channel=myself.channel
 
 		if quarkobject.p1!=None and quarkobject.p2!=None:
 			logging.info('[%s] getpeer in a full quark: go away' % (self.client_ident()))
@@ -960,8 +975,25 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if peer==self:
 			logging.info('[%s] couldn\'t find peer: %s' % (self.client_ident() , peer.client_ident()))
+			self.finish()
+			return()
 		else:
 			logging.info('[%s] found peer: %s [my fbaport: %d ; peer fbaport: %d]' % (self.client_ident() , peer.client_ident(), self.fbaport, peer.fbaport))
+
+		# fix for clients with multiple public ip addresses
+		if self==myself:
+			myself=self.get_myclient_from_quark_and_peer(quark,peer)
+			if self!=myself:
+				self.side=myself.side
+				self.nick=myself.nick
+				self.useports=myself.useports
+				self.channel=myself.channel
+				quarkobject.channel=myself.channel
+				logging.info('[%s] My client and I have different IP addresses: ' % (self.client_ident(), myself.client_ident()))
+			else:
+				logging.info('[%s] ERROR: couldn\'t find my client. Aborting.' % (self.client_ident()))
+				self.finish()
+				return()
 
 		selfchallenge=False
 		if self.side==1 and quarkobject.p1==None:
