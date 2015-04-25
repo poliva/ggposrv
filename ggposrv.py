@@ -989,7 +989,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				self.useports=myself.useports
 				self.channel=myself.channel
 				quarkobject.channel=myself.channel
-				logging.info('[%s] My client and I have different IP addresses: ' % (self.client_ident(), myself.client_ident()))
+				logging.info('[%s] My client and I have different IP addresses: %s' % (self.client_ident(), myself.client_ident()))
 			else:
 				logging.info('[%s] ERROR: couldn\'t find my client. Aborting.' % (self.client_ident()))
 				self.finish()
