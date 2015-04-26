@@ -2019,13 +2019,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 						try:
 							cursor.execute(sql, [(quarkobject.quark)])
 							start_date=cursor.fetchone()[0]
-							mdate1 = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+							mdate1 = datetime.datetime.strptime(str(start_date), "%Y-%m-%d %H:%M:%S")
 							duration = int((rdate1-mdate1).total_seconds())
 							sql = "UPDATE quarks SET duration="+PARAM+" WHERE quark=" + PARAM
 							cursor.execute(sql, [duration, quarkobject.quark])
 							conn.commit()
 						except:
-							logging.info("[%s] ERROR updating duration" % (self.client_ident()))
+							logging.error("[%s] ERROR updating duration" % (self.client_ident()))
 
 						conn.close()
 
