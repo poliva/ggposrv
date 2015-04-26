@@ -67,11 +67,11 @@ try:
 except:
 	pass
 
-VERSION=22
+VERSION=23
 
 MIN_CLIENT_VERSION=39
 
-DB_ENGINE="sqlite3"
+DB_ENGINE="mysql"
 
 if DB_ENGINE=="sqlite3":
 	import sqlite3
