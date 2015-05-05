@@ -1813,6 +1813,15 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self in channel.clients:
 			channel.clients.remove(self)
 
+	def get_profile_url(self, username):
+		username = re.sub("%", "%25", username)
+		username = re.sub(" ", "%20", username)
+		username = re.sub("#", "%23", username)
+		username = re.sub("&", "%26", username)
+		username = re.sub("\?", "%3F", username)
+		username = re.sub('\\\\', "%5C", username)
+		return 'https://www.fightcade.com/id/'+username
+
 	def dynamic_motd(self, channel):
 		motd=''
 
@@ -1838,6 +1847,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		motd+='-!- FightCade server version {0:.2f}'.format(VERSION/100.0)+'\n'
 		if self.version > 0:
 			motd+='-!- You are using FightCade client version {0:.2f}'.format(self.version/100.0)+'\n'
+		motd+='-!- Your profile: '+self.get_profile_url(self.nick)+'\n'
 
 		clients = len(self.server.clients)
 		if clients==1:
