@@ -54,6 +54,8 @@ import json
 import gzip
 import traceback
 import threading
+import tarfile
+import boto
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 import urlparse
 try:
@@ -851,10 +853,6 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			if not self.check_quark_format(quark):
 				return()
 
-			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
-			if not os.path.exists(quarkfile):
-				return()
-
 			dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 			if not os.path.exists(dbfile):
 				return()
@@ -871,6 +869,26 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			if channel=='ssf2t':
 				channel="ssf2xj"
+
+			if player1=='' and player2=='':
+				return()
+
+			# if the quark file is not present in the local cache, retrieve it from S3
+			quarkfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks', 'quark-'+quark+'-gamebuffer.fs')
+			if not os.path.exists(quarkfile):
+				bucket_name = 'fightcade.quarks'
+				conn = boto.connect_s3()
+				bucket = conn.get_bucket(bucket_name, validate=False)
+				tarball = 'quark-'+quark+'.tar'
+				k = bucket.get_key(tarball)
+				tarball_fullpath = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks',tarball)
+				k.get_contents_to_filename(tarball_fullpath)
+				tar = tarfile.open(tarball_fullpath)
+				tar.extractall(path=os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'quarks'))
+				tar.close()
+				os.remove(tarball_fullpath)
+				# we keep the quark in the local cache & remove it from S3
+				k.delete()
 
 			pdu='\x00\x00\x00\x00'
 			pdu+=self.sizepad(player1)
