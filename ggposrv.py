@@ -1817,6 +1817,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		username = re.sub("%", "%25", username)
 		username = re.sub(" ", "%20", username)
 		username = re.sub("#", "%23", username)
+		username = re.sub("\+", "%2B", username)
 		username = re.sub('\\\\', "%5C", username)
 		return 'https://www.fightcade.com/id/'+username
 
