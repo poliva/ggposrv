@@ -145,6 +145,25 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 			out["spectators"]=spectators
 			out["connections"]=len(ggposerver.connections)+len(ggposerver.clients)
 
+		if path == "/kill":
+			try:
+				nick=str(qs['nick'][0])
+				timestamp = time.time()
+				for client in ggposerver.clients.values():
+					if client.nick==nick:
+						cli={}
+						cli["status"]=client.status
+						cli["channel"]=client.channel.name
+						cli["cc"]=client.cc
+						cli["idle"]=int(timestamp-client.lastmsgtime)
+						cli["version"]=client.version
+						out[client.nick]=cli
+						client.handle_part(client.channel.name)
+						client.request.close()
+						ggposerver.clients.pop(client.nick)
+			except:
+				pass
+
 		if path == "/clean":
 			try:
 				limit=int(qs['limit'][0])
