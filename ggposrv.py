@@ -321,6 +321,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.country = "null"		# Client's country
 		self.cc = "null"		# Client's country code
 		self.lastmsg = 0		# timestamp of the last chat message
+		self.spamhit = 0		# how many times has been warned for spam
 		self.useports = False		# set to true when we have potential problems with NAT traversal
 		self.version = 0		# client version
 		self.warnmsg = ''		# Warning message (shown after match)
@@ -1790,9 +1791,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			self.lastmsg = timestamp
+			self.spamhit += 1
 			return
 
 		self.lastmsg = timestamp
+
+		# if warned +3 times, do not display his messages
+		if (self.spamhit > 3):
+			return
 
 		negseq=4294967294 #'\xff\xff\xff\xfe'
 		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
