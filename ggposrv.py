@@ -107,7 +107,7 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 				cli["channel"]=client.channel.name
 				cli["quark"]=client.quark
 				#cli["city"]=client.city
-				cli["idle"]=int(timestamp-client.lastmsg)
+				cli["idle"]=int(timestamp-client.lastmsgtime)
 				cli["country"]=client.country
 				cli["cc"]=client.cc
 				cli["version"]=client.version
@@ -168,12 +168,12 @@ class GGPOHttpHandler(BaseHTTPRequestHandler):
 				for client in ggposerver.clients.values():
 					if num >= limit:
 						break
-					if client.status==status and timestamp-client.lastmsg > idle and client.nick!='pof':
+					if client.status==status and timestamp-client.lastmsgtime > idle and client.nick!='pof':
 						cli={}
 						cli["status"]=client.status
 						cli["channel"]=client.channel.name
 						cli["cc"]=client.cc
-						cli["idle"]=int(timestamp-client.lastmsg)
+						cli["idle"]=int(timestamp-client.lastmsgtime)
 						cli["version"]=client.version
 						out[client.nick]=cli
 						client.handle_part(client.channel.name)
@@ -320,7 +320,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.city = "null"		# Client's city
 		self.country = "null"		# Client's country
 		self.cc = "null"		# Client's country code
-		self.lastmsg = 0		# timestamp of the last chat message
+		self.lastmsgtime = 0		# timestamp of the last chat message
+		self.lastmsg = ''		# last chat message
 		self.spamhit = 0		# how many times has been warned for spam
 		self.useports = False		# set to true when we have potential problems with NAT traversal
 		self.version = 0		# client version
@@ -1250,10 +1251,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		challengespam=False
 		timestamp = time.time()
-		if (timestamp-self.lastmsg < 0.70):
+		if (timestamp-self.lastmsgtime < 0.70):
 			challengespam=True
 
-		self.lastmsg = timestamp
+		self.lastmsgtime = timestamp
 
 		# if we can't find the client, tell the user that this client has parted:
 		if client == self and nick!=self.nick:
@@ -1556,7 +1557,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.cc, self.country, self.city = self.geolocate(self.host[0])
 		self.version = version
 		timestamp = time.time()
-		self.lastmsg = timestamp
+		self.lastmsgtime = timestamp
 
 		# auth successful
 		self.send_ack(sequence)
@@ -1783,18 +1784,23 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			return
 
 		timestamp = time.time()
-		if (timestamp-self.lastmsg < 0.70 or len(msg) > 1000):
+
+		if (self.lastmsg == msg) and (len(msg) > 3) and (timestamp-self.lastmsgtime<30):
+			self.spamhit += 1
+		self.lastmsg = msg
+
+		if (timestamp-self.lastmsgtime < 0.70 or len(msg) > 700):
 			nick="System"
 			msg="Please do not spam"
 			negseq=4294967294 #'\xff\xff\xff\xfe'
 			response = self.reply(negseq,self.sizepad(nick)+self.sizepad(msg))
 			logging.debug('to %s: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
-			self.lastmsg = timestamp
+			self.lastmsgtime = timestamp
 			self.spamhit += 1
 			return
 
-		self.lastmsg = timestamp
+		self.lastmsgtime = timestamp
 
 		negseq=4294967294 #'\xff\xff\xff\xfe'
 		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
