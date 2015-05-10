@@ -1796,13 +1796,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		self.lastmsg = timestamp
 
+		negseq=4294967294 #'\xff\xff\xff\xfe'
+		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
+		self.send_queue.append(response)
+
 		# if warned +3 times, do not display his messages
 		if (self.spamhit > 3):
 			return
 
-		negseq=4294967294 #'\xff\xff\xff\xfe'
-		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
-		self.send_queue.append(response)
 		clients = self.channel.clients.copy()
 		for client in clients:
 			# Send message to all client in the channel
