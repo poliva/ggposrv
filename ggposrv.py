@@ -1821,7 +1821,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		timestamp = time.time()
 
-		if (self.lastmsg == msg) and (len(msg) > 3) and (timestamp-self.lastmsgtime<30):
+		if len(msg)>=300:
+			self.spamhit += 1
+
+		if (len(msg)>=200) and (len(sef.lastmsg)>=200) and (timestamp-self.lastmsgtime<30):
+			self.spamhit += 1
+
+		if (self.lastmsg == msg) and (len(msg) > 3) and (timestamp-self.lastmsgtime<60):
 			self.spamhit += 1
 		self.lastmsg = msg
 
@@ -1842,8 +1848,8 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		response = self.reply(negseq,self.sizepad(self.nick)+self.sizepad(msg))
 		self.send_queue.append(response)
 
-		# if warned +3 times, do not display his messages
-		if (self.spamhit > 3):
+		# if warned 3 times, do not display his messages
+		if (self.spamhit >= 3):
 			return
 
 		clients = self.channel.clients.copy()
