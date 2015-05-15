@@ -2215,6 +2215,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['gigawing']=GGPOChannel("gigawing", "gigawing", 'Giga Wing (990222 USA)')
 		self.channels['goalx3']=GGPOChannel("goalx3", "goalx3", 'Goal! Goal! Goal!')
 		self.channels['gowcaizr']=GGPOChannel("gowcaizr", "gowcaizr", 'Voltage Fighter - Gowcaizer')
+		self.channels['grdians']=GGPOChannel("grdians", "grdians", 'Guardians')
 		self.channels['guwange']=GGPOChannel("guwange", "guwange", 'Guwange (Japan, 1999 6/24 master ver.)')
 		self.channels['hsf2']=GGPOChannel("hsf2", "hsf2", 'Hyper Street Fighter 2: The Anniversary Edition (040202 Asia)', '', 376)
 		#self.channels['jojobane']=GGPOChannel("jojobane", "jojobane", "JoJo's Bizarre Adventure", '', 496)
