@@ -1821,10 +1821,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		timestamp = time.time()
 
-		if (len(msg)>=300) and (">" not in msg):
+		if (len(msg)>=200) and (">" not in msg):
+			self.spamhit += 0.75
+
+		if (len(msg)>=170) and (len(self.lastmsg)>=170) and (timestamp-self.lastmsgtime<30) and (">" not in msg):
 			self.spamhit += 1
 
-		if (len(msg)>=200) and (len(self.lastmsg)>=200) and (timestamp-self.lastmsgtime<30) and (">" not in msg):
+		if ("http" in msg) and ("http" in self.lastmsg) and (timestamp-self.lastmsgtime<30):
 			self.spamhit += 1
 
 		if (self.lastmsg == msg) and (len(msg) > 3) and (timestamp-self.lastmsgtime<60):
