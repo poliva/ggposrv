@@ -3,7 +3,7 @@
 #
 # open source ggpo server (re)implementation
 #
-#  (c) 2014 Pau Oliva Fora (@pof)
+#  (c) 2014-2015 Pau Oliva Fora (@pof)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -1528,33 +1528,35 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.finish()
 			return()
 
-		# New connection
-		conn = dbconnect()
-		cursor = conn.cursor()
+		if not nullauth:
 
-		# fetch the user's salt
-		sql = "SELECT salt FROM users WHERE username=" + PARAM
-		cursor.execute(sql, [(nick)])
-		salt=cursor.fetchone()
-		if (salt==None):
-			# user doesn't exist into database
-			logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
-			self.kick_client(sequence,4)
+			# New connection
+			conn = dbconnect()
+			cursor = conn.cursor()
+
+			# fetch the user's salt
+			sql = "SELECT salt FROM users WHERE username=" + PARAM
+			cursor.execute(sql, [(nick)])
+			salt=cursor.fetchone()
+			if (salt==None):
+				# user doesn't exist into database
+				logging.info("[%s] user doesn't exist into database: %s" % (self.client_ident(), nick))
+				self.kick_client(sequence,4)
+				conn.close()
+				return
+
+			# compute the hashed password
+			h_password = hmac.new("GGPO-NG", password+salt[0], hashlib.sha512).hexdigest()
+
+			sql = "SELECT COUNT(username) FROM users WHERE password=" + PARAM + " AND username=" + PARAM
+			cursor.execute(sql, [(h_password),(nick)])
+			result = cursor.fetchone()
 			conn.close()
-			return
-
-		# compute the hashed password
-		h_password = hmac.new("GGPO-NG", password+salt[0], hashlib.sha512).hexdigest()
-
-		sql = "SELECT COUNT(username) FROM users WHERE password=" + PARAM + " AND username=" + PARAM
-		cursor.execute(sql, [(h_password),(nick)])
-		result = cursor.fetchone()
-		conn.close()
-		if (result[0] != 1):
-			# wrong password
-			logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
-			self.kick_client(sequence,6)
-			return
+			if (result[0] != 1):
+				# wrong password
+				logging.info("[%s] wrong password: %s" % (self.client_ident(), nick))
+				self.kick_client(sequence,6)
+				return
 
 		if nick in self.server.clients:
 			# Someone else is using the nick
@@ -2497,7 +2499,7 @@ if __name__ == "__main__":
 	global holepunch, ggposerver, replayonly
 
 	print "-!- FightCade server version {0:.2f}".format(VERSION/100.0)
-	print "-!- (c) 2014 Pau Oliva Fora (@pof) "
+	print "-!- (c) 2014-2015 Pau Oliva Fora (@pof) "
 
 	#
 	# Parameter parsing
@@ -2517,11 +2519,13 @@ if __name__ == "__main__":
 	parser.add_option("-H", "--http", dest="httpserver", action="store_true", default=False, help="Start debug http server on port 8000")
 	parser.add_option("-u", "--udpholepunch", dest="udpholepunch", action="store_true", default=False, help="Use UDP hole punching.")
 	parser.add_option("-r", "--replay", dest="replay", action="store_true", default=False, help="Use the server only for replaying quarks.")
+	parser.add_option("-n", "--nullauth", dest="nullauth", action="store_true", default=False, help="Accept all login/password combinations.")
 
 	(options, args) = parser.parse_args()
 
 	holepunch=options.udpholepunch
 	replayonly=options.replay
+	nullauth=options.nullauth
 
 	#logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
 	logfile = options.logfile
