@@ -1005,7 +1005,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if self.clienttype=="player":
 			# call auto_spectate() to record the game
-			logging.info('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
+			logging.debug('[%s] calling AUTO-SPECTATE' % (self.client_ident()))
 			self.auto_spectate(quark)
 
 			# announce the match to the public
@@ -1056,7 +1056,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.finish()
 			return()
 		else:
-			logging.info('[%s] found peer: %s [my fbaport: %d ; peer fbaport: %d]' % (self.client_ident() , peer.client_ident(), self.fbaport, peer.fbaport))
+			logging.debug('[%s] found peer: %s [my fbaport: %d ; peer fbaport: %d]' % (self.client_ident() , peer.client_ident(), self.fbaport, peer.fbaport))
 
 		# fix for clients with multiple public ip addresses
 		if self==myself:
@@ -1106,7 +1106,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			if (int(self.host[1])>6009 or int(self.host[1])<6000) and myself.version < 32:
 				myself.useports=True
-				logging.info('[%s] using holepunch with %s on quark %s (and setting useports=True)' % (self.client_ident(), peer.client_ident(), quark))
+				logging.debug('[%s] using holepunch with %s on quark %s (and setting useports=True)' % (self.client_ident(), peer.client_ident(), quark))
 
 		else:
 			if holepunch:
@@ -1186,7 +1186,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			try:
 				client = self.server.connections[host]
 				if client.clienttype=="spectator" and client.host[0]==self.host[0] and client.quark==quark:
-					logging.info('[%s] kicking spectator trying to watch a duplicate quark: %s' % (self.client_ident(), quark))
+					logging.debug('[%s] kicking spectator trying to watch a duplicate quark: %s' % (self.client_ident(), quark))
 					self.finish()
 					return()
 			except:
@@ -1197,7 +1197,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		except KeyError:
 
 			# to replay a saved quark
-			logging.info('[%s] spectating saved quark: %s' % (self.client_ident(), quark))
+			logging.debug('[%s] spectating saved quark: %s' % (self.client_ident(), quark))
 
 			# send ack to the client's ggpofba
 			self.send_ack(sequence)
@@ -1219,7 +1219,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 			return()
 
-		logging.info('[%s] spectating real-time quark: %s' % (self.client_ident(), quark))
+		logging.debug('[%s] spectating real-time quark: %s' % (self.client_ident(), quark))
 
 		# send ack to the client's ggpofba
 		self.send_ack(sequence)
@@ -1325,7 +1325,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0a')
-			logging.info('[%s] challenge NO_ACK: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%r and self.channel=%r and self.channel.name=%r and channel=%r and spam=%s' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel, challengespam ))
+			logging.debug('[%s] challenge NO_ACK: tried to challenge client %s (%s) but client.status=%d and self.status=%d and client.channel=%r and self.channel=%r and self.channel.name=%r and channel=%r and spam=%s' % (self.client_ident(), client.client_ident(), nick, client.status, self.status, client.channel, self.channel, self.channel.name, channel, challengespam ))
 			self.send_queue.append(response)
 
 	def handle_accept(self, params):
@@ -1337,7 +1337,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.host not in client.challenging:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0c')
-			logging.info('[%s] accept NO_ACK: %r' % (self.client_ident(), response))
+			logging.debug('[%s] accept NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return
 		else:
@@ -1388,7 +1388,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.host not in client.challenging:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0d')
-			logging.info('[%s] decline NO_ACK: %r' % (self.client_ident(), response))
+			logging.debug('[%s] decline NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return
 		else:
@@ -1432,7 +1432,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		else:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0b')
-			logging.info('[%s] watch NO_ACK: %r' % (self.client_ident(), response))
+			logging.debug('[%s] watch NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 
 	def handle_cancel(self, params):
@@ -1443,7 +1443,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if client.host not in self.challenging:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0e')
-			logging.info('[%s] cancel NO_ACK: %r' % (self.client_ident(), response))
+			logging.debug('[%s] cancel NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return
 		else:
@@ -1766,7 +1766,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if not channel_name in self.server.channels or self.nick==None or replayonly:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x08')
-			logging.info('[%s] JOIN NO_ACK: %r' % (self.client_ident(), response))
+			logging.debug('[%s] JOIN NO_ACK: %r' % (self.client_ident(), response))
 			self.send_queue.append(response)
 			return()
 
@@ -1798,7 +1798,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			headers = {'content-type': 'application/json'}
 			response = requests.post(url, data=json.dumps(payload), headers=headers)
 		except:
-			logging.info('[%s] ERROR sending attendance stats' % self.client_ident())
+			logging.debug('[%s] ERROR sending attendance stats' % self.client_ident())
 
 	def handle_privmsg(self, params):
 		"""
@@ -1999,11 +1999,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					client.opponent=None
 			#self.channel.clients.remove(self)
 			self.handle_part(self.channel.name)
-			logging.info("[%s] removing myself from channel" % (self.client_ident()))
+			logging.debug("[%s] removing myself from channel" % (self.client_ident()))
 
 		if self.nick in self.server.clients and self.clienttype=="client":
 			self.server.clients.pop(self.nick)
-			logging.info("[%s] removing myself from server clients" % (self.client_ident()))
+			logging.debug("[%s] removing myself from server clients" % (self.client_ident()))
 
 		if self.clienttype=="player":
 
@@ -2051,13 +2051,13 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				if myself.warnmsg!='' and myself.clienttype=="client" and myself.host[0]!=mypeer.host[0]:
 					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(myself.warnmsg)))
 					myself.send_queue.append(response)
-					logging.info("[%s] sending warnmsg to %s : %s" % (self.client_ident(), myself.client_ident(), myself.warnmsg.replace('\n', ' ') ))
+					logging.debug("[%s] sending warnmsg to %s : %s" % (self.client_ident(), myself.client_ident(), myself.warnmsg.replace('\n', ' ') ))
 				myself.warnmsg=''
 
 				if mypeer.warnmsg!='' and mypeer.clienttype=="client" and myself.host[0]!=mypeer.host[0]:
 					response = self.reply(negseq,self.sizepad(str(nick))+self.sizepad(str(mypeer.warnmsg)))
 					mypeer.send_queue.append(response)
-					logging.info("[%s] sending warnmsg to %s : %s" % (self.client_ident(), mypeer.client_ident(), mypeer.warnmsg.replace('\n', ' ') ))
+					logging.debug("[%s] sending warnmsg to %s : %s" % (self.client_ident(), mypeer.client_ident(), mypeer.warnmsg.replace('\n', ' ') ))
 				mypeer.warnmsg=''
 
 				# remove quark if we are a player that closes ggpofba
@@ -2069,7 +2069,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					#logging.info("[%s] killing both FBAs" % (self.client_ident()))
 					#quarkobject.p1.send_queue.append('\xff\xff\x00\x00\xde\xad')
 					#quarkobject.p2.send_queue.append('\xff\xff\x00\x00\xde\xad')
-					logging.info("[%s] removing quark: %s" % (self.client_ident(), self.quark))
+					logging.debug("[%s] removing quark: %s" % (self.client_ident(), self.quark))
 					self.server.quarks.pop(self.quark)
 
 					# compress replay data
@@ -2122,10 +2122,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 
 				if quarkobject.p1==self and self.quark!=None and quarkobject.p2!=None:
-					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
+					logging.debug("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p2.client_ident()))
 					quarkobject.p2.request.close()
 				if quarkobject.p2==self and self.quark!=None and quarkobject.p1!=None:
-					logging.info("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p1.client_ident()))
+					logging.debug("[%s] killing peer connection: %s" % (self.client_ident(), quarkobject.p1.client_ident()))
 					quarkobject.p1.request.close()
 
 			except KeyError, AttributeError:
@@ -2134,16 +2134,16 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.clienttype=="spectator":
 			# this client is an spectator
 			try:
-				logging.info("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
+				logging.debug("[%s] spectator leaving quark %s" % (self.client_ident(), self.quark))
 				self.spectator_leave(self.quark)
 			except KeyError, AttributeError:
 				pass
 
 		if self.host in self.server.connections:
 			self.server.connections.pop(self.host)
-			logging.info("[%s] removing myself from server connections" % (self.client_ident()))
+			logging.debug("[%s] removing myself from server connections" % (self.client_ident()))
 
-		logging.info('[%s] Connection finished' % (self.client_ident()))
+		logging.debug('[%s] Connection finished' % (self.client_ident()))
 		self.request.close()
 
 	def __repr__(self):
