@@ -1761,7 +1761,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				else:
 					# pick the value from /run/shm/ggposrv/${rom-name}.${port-number}.txt
 					try:
-						f=open("/run/shm/ggposrv/"+str(channel.rom)+"."+str(channel.port)+".txt", 'r')
+						f=open("/run/shm/ggposrv/"+str(channel.name)+"."+str(channel.port)+".txt", 'r')
 						num_clients = int(f.read())
 						f.close()
 					except:
@@ -1813,7 +1813,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.handle_status(params)
 
 		# write the number of channel clients to /run/shm/ggposrv/${rom-name}.${port-number}.txt
-		chanfile = "/run/shm/ggposrv/"+str(channel.rom)+"."+str(listen_port)+".txt"
+		chanfile = "/run/shm/ggposrv/"+str(channel.name)+"."+str(listen_port)+".txt"
 		if not os.path.exists(chanfile):
 			try:
 				os.mkdir(os.path.dirname(chanfile))
@@ -1928,7 +1928,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			channel.clients.remove(self)
 
 		# write the number of channel clients to /run/shm/ggposrv/${rom-name}.${port-number}.txt
-		chanfile = "/run/shm/ggposrv/"+str(channel.rom)+"."+str(listen_port)+".txt"
+		chanfile = "/run/shm/ggposrv/"+str(channel.name)+"."+str(listen_port)+".txt"
 		if not os.path.exists(chanfile):
 			try:
 				os.mkdir(os.path.dirname(chanfile))
