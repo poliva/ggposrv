@@ -258,12 +258,13 @@ class GGPOChannel(object):
 	"""
 	Object representing an GGPO channel.
 	"""
-	def __init__(self, name, rom, topic, motd='', chunksize=1096):
+	def __init__(self, name, rom, topic, motd='', chunksize=1096, port=7000):
 		self.name = name
 		self.rom = rom
 		self.topic = topic
 		self.motd = motd
 		self.chunksize = chunksize
+		self.port = port
 		self.clients = set()
 
 class GGPOQuark(object):
@@ -1363,7 +1364,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(self.opponent)
 		pdu+=self.sizepad(self.nick)
-		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
+		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+","+str(listen_port))
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -1374,7 +1375,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		pdu=''
 		pdu+=self.sizepad(client.nick)
 		pdu+=self.sizepad(client.opponent)
-		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+",7000")
+		pdu+=self.sizepad("quark:served,"+self.channel.name+","+self.quark+","+str(listen_port))
 
 		response = self.reply(negseq,pdu)
 		logging.debug('to %s: %r' % (client.client_ident(), response))
@@ -1424,7 +1425,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pdu=''
 			pdu+=self.sizepad(client.nick)
 			pdu+=self.sizepad(client.opponent)
-			pdu+=self.sizepad("quark:stream,"+self.channel.name+","+str(client.quark)+",7000")
+			pdu+=self.sizepad("quark:stream,"+self.channel.name+","+str(client.quark)+","+str(listen_port))
 
 			response = self.reply(negseq,pdu)
 			logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -1570,7 +1571,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				self.kick_client(sequence,8)
 				return()
 
-			# check for multiple connections from the same ip address
+		# check for multiple connections from the same ip address
 		same_ip=0
 		clients = dict(self.server.clients)
 		try:
@@ -1581,7 +1582,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pass
 		#logging.info("[%s] connections from host %s -> %d" % (self.client_ident(), self.host[0], same_ip))
 
-		if same_ip >= 2:
+		if same_ip >= 1:
 			self.nick = nick
 			logging.info("[%s] too many connections from host %s" % (self.client_ident(), self.host[0]))
 			self.kick_client(sequence,9)
@@ -1745,12 +1746,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				topic=str(channel.topic)+" ["+str(len(channel.clients))+"]"
 				pdu+=self.sizepad(topic)
 				pdu+=self.pad2hex(i)
-			else:
+			elif (self.version < 41):
 				pdu+=self.sizepad(channel.name)
 				pdu+=self.sizepad(channel.rom)
 				pdu+=self.sizepad(channel.topic)
 				pdu+=self.pad2hex(len(channel.clients))
 				pdu+=self.pad2hex(i)
+			else:
+				pdu+=self.sizepad(channel.name)
+				pdu+=self.sizepad(channel.rom)
+				pdu+=self.sizepad(channel.topic)
+				pdu+=self.pad2hex(len(channel.clients))
+				pdu+=self.pad2hex(channel.port)
+				pdu+=self.pad2hex(i)
+
 		
 		response = self.reply(sequence,'\x00\x00\x00\x00'+self.pad2hex(i)+pdu)
 		logging.debug('to %s: %r' % (self.client_ident(), response))
@@ -2238,20 +2247,20 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['knights']=GGPOChannel("knights", "knights", 'Knights of the Round (911127 etc)')
 		#self.channels['kod']=GGPOChannel("kod", "kod", 'King of Dragons (910711 etc)')
 		self.channels['kodu']=GGPOChannel("kodu", "kodu", 'King of Dragons (US 910910)')
-		self.channels['kof2000']=GGPOChannel("kof2000", "kof2000", 'King of Fighters 2000', '', 1096)
-		self.channels['kof2001']=GGPOChannel("kof2001", "kof2001", 'King of Fighters 2001 (set 1)', '', 1096)
-		self.channels['kof2002']=GGPOChannel("kof2002", "kof2002", 'King of Fighters 2002 - challenge to ultimate battle', '', 1096)
-		self.channels['kof2003']=GGPOChannel("kof2003", "kof2003", 'King of Fighters 2003 (MVS)', '', 1096)
-		self.channels['kof2k4se']=GGPOChannel("kof2k4se", "kof2k4se", 'King of Fighters Special Edition 2004 (bootleg of kof2002)', '', 1096)
-		self.channels['kof94']=GGPOChannel("kof94", "kof94", "King of Fighters '94", '', 1096)
-		self.channels['kof95']=GGPOChannel("kof95", "kof95", "King of Fighters '95 (set 1)", '', 1096)
-		self.channels['kof96']=GGPOChannel("kof96", "kof96", "King of Fighters '96 (set 1)", '', 1096)
-		self.channels['kof97']=GGPOChannel("kof97", "kof97", "King of Fighters '97 (set 1)", '', 1096)
+		self.channels['kof2000']=GGPOChannel("kof2000", "kof2000", 'King of Fighters 2000', '', 1096, 7002)
+		self.channels['kof2001']=GGPOChannel("kof2001", "kof2001", 'King of Fighters 2001 (set 1)', '', 1096, 7002)
+		self.channels['kof2002']=GGPOChannel("kof2002", "kof2002", 'King of Fighters 2002 - challenge to ultimate battle', '', 1096, 7002)
+		self.channels['kof2003']=GGPOChannel("kof2003", "kof2003", 'King of Fighters 2003 (MVS)', '', 1096, 7002)
+		self.channels['kof2k4se']=GGPOChannel("kof2k4se", "kof2k4se", 'King of Fighters Special Edition 2004 (bootleg of kof2002)', '', 1096, 7002)
+		self.channels['kof94']=GGPOChannel("kof94", "kof94", "King of Fighters '94", '', 1096, 7002)
+		self.channels['kof95']=GGPOChannel("kof95", "kof95", "King of Fighters '95 (set 1)", '', 1096, 7002)
+		self.channels['kof96']=GGPOChannel("kof96", "kof96", "King of Fighters '96 (set 1)", '', 1096, 7002)
+		self.channels['kof97']=GGPOChannel("kof97", "kof97", "King of Fighters '97 (set 1)", '', 1096, 7002)
 		#self.channels['kof98-2']=GGPOChannel("kof98-2", "kof98", "King of Fighters '98 (Room 2)")
 		#self.channels['kof98-3']=GGPOChannel("kof98-3", "kof98", "King of Fighters '98 (Room 3)")
 		#self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters '98 (Room 1)")
-		self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters '98", '', 1096)
-		self.channels['kof99']=GGPOChannel("kof99", "kof99", "King of Fighters '99 - millennium battle (set 1)", '', 1096)
+		self.channels['kof98']=GGPOChannel("kof98", "kof98", "King of Fighters '98", '', 1096, 7002)
+		self.channels['kof99']=GGPOChannel("kof99", "kof99", "King of Fighters '99 - millennium battle (set 1)", '', 1096, 7002)
 		self.channels['kotm2']=GGPOChannel("kotm2", "kotm2", 'King of the Monsters 2 - the next thing')
 		self.channels['kotm']=GGPOChannel("kotm", "kotm", 'King of the Monsters (set 1)')
 		#self.channels['kov']=GGPOChannel("kov", "kov", 'Knights of Valour')
@@ -2516,7 +2525,7 @@ if __name__ == "__main__":
 	parser.add_option("-V", "--verbose", dest="verbose", action="store_true", default=False, help="Be verbose (show lots of output)")
 	parser.add_option("-l", "--log-stdout", dest="log_stdout", action="store_true", default=False, help="Also log to stdout")
 	parser.add_option("-f", "--foreground", dest="foreground", action="store_true", default=False, help="Do not go into daemon mode.")
-	parser.add_option("-H", "--http", dest="httpserver", action="store_true", default=False, help="Start debug http server on port 8000")
+	parser.add_option("-H", "--http", dest="httpserver", action="store_true", default=False, help="Start debug http server")
 	parser.add_option("-u", "--udpholepunch", dest="udpholepunch", action="store_true", default=False, help="Use UDP hole punching.")
 	parser.add_option("-r", "--replay", dest="replay", action="store_true", default=False, help="Use the server only for replaying quarks.")
 	parser.add_option("-n", "--nullauth", dest="nullauth", action="store_true", default=False, help="Accept all login/password combinations.")
@@ -2526,6 +2535,7 @@ if __name__ == "__main__":
 	holepunch=options.udpholepunch
 	replayonly=options.replay
 	nullauth=options.nullauth
+	listen_port=int(options.listen_port)
 
 	#logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
 	logfile = options.logfile
@@ -2611,8 +2621,8 @@ if __name__ == "__main__":
 		logging.info('Starting ggposrv on %s:%s/tcp' % (options.listen_address, options.listen_port))
 
 		if options.httpserver:
-			webserver = HTTPServer((options.listen_address, 8000), GGPOHttpHandler)
-			logging.info('Starting http server on %s:8000/tcp' % (options.listen_address))
+			webserver = HTTPServer((options.listen_address, listen_port+1000), GGPOHttpHandler)
+			logging.info('Starting http server on %s:%s/tcp' % (options.listen_address, str(listen_port+1000)))
 			t2=threading.Thread(target=webserver.serve_forever)
 			t2.daemon=True
 			t2.start()
