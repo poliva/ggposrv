@@ -1827,13 +1827,14 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pass
 
 		# hook for attendance stats, see: https://github.com/poliva/ggposrv/issues/14
-		try:
-			url = "http://neogeodb.com:8765/players"
-			payload = { "player": str(self.nick), "rom": str(self.channel.name), "country": str(self.country) }
-			headers = {'content-type': 'application/json'}
-			response = requests.post(url, data=json.dumps(payload), headers=headers)
-		except:
-			logging.debug('[%s] ERROR sending attendance stats' % self.client_ident())
+		if attendance:
+			try:
+				url = "http://neogeodb.com:8765/players"
+				payload = { "player": str(self.nick), "rom": str(self.channel.name), "country": str(self.country) }
+				headers = {'content-type': 'application/json'}
+				response = requests.post(url, data=json.dumps(payload), headers=headers)
+			except:
+				logging.debug('[%s] ERROR sending attendance stats' % self.client_ident())
 
 	def handle_privmsg(self, params):
 		"""
@@ -2545,7 +2546,7 @@ class Daemon:
 
 if __name__ == "__main__":
 
-	global holepunch, ggposerver, replayonly
+	global ggposerver
 
 	print "-!- FightCade server version {0:.2f}".format(VERSION/100.0)
 	print "-!- (c) 2014-2015 Pau Oliva Fora (@pof) "
@@ -2569,6 +2570,7 @@ if __name__ == "__main__":
 	parser.add_option("-u", "--udpholepunch", dest="udpholepunch", action="store_true", default=False, help="Use UDP hole punching.")
 	parser.add_option("-r", "--replay", dest="replay", action="store_true", default=False, help="Use the server only for replaying quarks.")
 	parser.add_option("-n", "--nullauth", dest="nullauth", action="store_true", default=False, help="Accept all login/password combinations.")
+	parser.add_option("-t", "--attendance", dest="attendance", action="store_true", default=False, help="Send attendance stats")
 
 	(options, args) = parser.parse_args()
 
@@ -2576,6 +2578,7 @@ if __name__ == "__main__":
 	replayonly=options.replay
 	nullauth=options.nullauth
 	listen_port=int(options.listen_port)
+	attendance=options.attendance
 
 	#logfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'ggposrv.log')
 	logfile = options.logfile
