@@ -1756,7 +1756,19 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				pdu+=self.sizepad(channel.name)
 				pdu+=self.sizepad(channel.rom)
 				pdu+=self.sizepad(channel.topic)
-				pdu+=self.pad2hex(len(channel.clients))
+				if channel.port==listen_port:
+					pdu+=self.pad2hex(len(channel.clients))
+				else:
+					# pick the value from /run/shm/ggposrv/${rom-name}.${port-number}.txt
+					try:
+						f=open("/run/shm/ggposrv/"+str(channel.rom)+"."+str(channel.port)+".txt", 'r')
+						num_clients = int(f.read())
+						f.close()
+					except:
+						num_clients=0
+					if num_clients < 0:
+						num_clients=0
+					pdu+=self.pad2hex(num_clients)
 				pdu+=self.pad2hex(channel.port)
 				pdu+=self.pad2hex(i)
 
@@ -1799,6 +1811,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		params = self.status,0
 		self.handle_status(params)
+
+		# write the number of channel clients to /run/shm/ggposrv/${rom-name}.${port-number}.txt
+		chanfile = "/run/shm/ggposrv/"+str(channel.rom)+"."+str(listen_port)+".txt"
+		if not os.path.exists(chanfile):
+			try:
+				os.mkdir(os.path.dirname(chanfile))
+			except:
+				pass
+		try:
+			f=open(chanfile, 'w')
+			f.write(str(len(channel.clients)))
+			f.close()
+		except:
+			pass
 
 		# hook for attendance stats, see: https://github.com/poliva/ggposrv/issues/14
 		try:
@@ -1899,6 +1925,20 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		if self in channel.clients:
 			channel.clients.remove(self)
+
+		# write the number of channel clients to /run/shm/ggposrv/${rom-name}.${port-number}.txt
+		chanfile = "/run/shm/ggposrv/"+str(channel.rom)+"."+str(listen_port)+".txt"
+		if not os.path.exists(chanfile):
+			try:
+				os.mkdir(os.path.dirname(chanfile))
+			except:
+				pass
+		try:
+			f=open(chanfile, 'w')
+			f.write(str(len(channel.clients)))
+			f.close()
+		except:
+			pass
 
 	def get_profile_url(self, username):
 		username = re.sub("%", "%25", username)
@@ -2242,7 +2282,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['kabukikl']=GGPOChannel("kabukikl", "kabukikl", 'Kabuki Klash - far east of eden', '', 1096)
 		self.channels['karatblz']=GGPOChannel("karatblz", "karatblz", "Karate Blazers")
 		self.channels['karnovr']=GGPOChannel("karnovr", "karnovr", "Karnov's Revenge", '', 1096)
-		self.channels['kf2k5uni']=GGPOChannel("kf2k5uni", "kf2k5uni", 'King of Fighters 10th Anniversary 2005 Unique (bootleg of kof2002)', '', 1096)
+		self.channels['kf2k5uni']=GGPOChannel("kf2k5uni", "kf2k5uni", 'King of Fighters 10th Anniversary 2005 Unique (bootleg of kof2002)', '', 1096, 7002)
 		self.channels['kizuna']=GGPOChannel("kizuna", "kizuna", 'Kizuna Encounter - super tag battle', '', 1096)
 		self.channels['knights']=GGPOChannel("knights", "knights", 'Knights of the Round (911127 etc)')
 		#self.channels['kod']=GGPOChannel("kod", "kod", 'King of Dragons (910711 etc)')
