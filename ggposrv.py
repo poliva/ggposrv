@@ -1582,7 +1582,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			pass
 		#logging.info("[%s] connections from host %s -> %d" % (self.client_ident(), self.host[0], same_ip))
 
-		if same_ip >= 1:
+		if same_ip >= 2:
 			self.nick = nick
 			logging.info("[%s] too many connections from host %s" % (self.client_ident(), self.host[0]))
 			self.kick_client(sequence,9)
