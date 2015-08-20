@@ -1975,7 +1975,39 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if self.version > 0:
 			motd+='-!- You are using FightCade client version {0:.2f}'.format(self.version/100.0)+'\n'
 
+		ports=[]
+		for channel in self.server.channels:
+			port=self.server.channels[channel].port
+			if port not in ports:
+				ports.append(port)
+
 		clients = len(self.server.clients)
+
+		# write the number of clients to /run/shm/ggposrv/server-clients.${port-number}.txt
+		chanfile = "/run/shm/ggposrv/server-clients."+str(listen_port)+".txt"
+		if not os.path.exists(chanfile):
+			try:
+				os.mkdir(os.path.dirname(chanfile))
+			except:
+				pass
+		try:
+			f=open(chanfile, 'w')
+			f.write(str(clients))
+			f.close()
+		except:
+			pass
+
+		for port in ports:
+			if int(listen_port) != int(port):
+				# pick the value from /run/shm/ggposrv/server-clients.${port-number}.txt
+				try:
+					f=open("/run/shm/ggposrv/server-clients."+str(port)+".txt", 'r')
+					num_clients = int(f.read())
+					f.close()
+				except:
+					num_clients=0
+				clients+=num_clients
+
 		if clients==1:
 			motd+='-!- You are the first client on the server!\n'
 		else:
@@ -1986,6 +2018,26 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		for quark in self.server.quarks.values():
 			if quark.p1!=None and quark.p2!=None and quark.p1.nick!=None and quark.p2.nick!=None:
 				quarks=quarks+1
+
+		# write the number of quarks to /run/shm/ggposrv/server-quarks.${port-number}.txt
+		quarksfile = "/run/shm/ggposrv/server-quarks."+str(listen_port)+".txt"
+		try:
+			f=open(quarksfile, 'w')
+			f.write(str(quarks))
+			f.close()
+		except:
+			pass
+
+		for port in ports:
+			if int(listen_port) != int(port):
+				# pick the value from /run/shm/ggposrv/server-quarks.${port-number}.txt
+				try:
+					f=open("/run/shm/ggposrv/server-quarks."+str(port)+".txt", 'r')
+					num_quarks = int(f.read())
+					f.close()
+				except:
+					num_quarks=0
+				quarks+=num_quarks
 
 		if quarks==0:
 			motd+='-!- At the moment no one is playing :(\n'
@@ -2003,6 +2055,26 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 					spectators+=1
 			except:
 				pass
+
+		# write the number of spectators to /run/shm/ggposrv/server-quarks.${port-number}.txt
+		specfile = "/run/shm/ggposrv/server-spectators."+str(listen_port)+".txt"
+		try:
+			f=open(specfile, 'w')
+			f.write(str(spectators))
+			f.close()
+		except:
+			pass
+
+		for port in ports:
+			if int(listen_port) != int(port):
+				# pick the value from /run/shm/ggposrv/server-spectators.${port-number}.txt
+				try:
+					f=open("/run/shm/ggposrv/server-spectators."+str(port)+".txt", 'r')
+					num_spectators = int(f.read())
+					f.close()
+				except:
+					num_spectators=0
+				spectators+=num_spectators
 
 		motd+='-!- There are '+str(spectators)+' spectators.\n'
 
