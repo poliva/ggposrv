@@ -363,6 +363,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.useports = False		# set to true when we have potential problems with NAT traversal
 		self.version = 0		# client version
 		self.warnmsg = ''		# Warning message (shown after match)
+		self.turboflag = 0		# turbo flag helper
 		self.send_queue = []		# Messages to send to client (strings)
 		self.channel = GGPOChannel("lobby",'', "The Lobby")	# Channel the client is in
 		self.challenging = {}		# users (GGPOClient instances) that this client is challenging by host
