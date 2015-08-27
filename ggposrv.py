@@ -358,6 +358,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		self.country = "null"		# Client's country
 		self.cc = "null"		# Client's country code
 		self.lastmsgtime = 0		# timestamp of the last chat message
+		self.challengetime = 0		# timestamp of the last challenge
 		self.lastmsg = ''		# last chat message
 		self.spamhit = 0		# how many times has been warned for spam
 		self.useports = False		# set to true when we have potential problems with NAT traversal
@@ -1292,6 +1293,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		if (timestamp-self.lastmsgtime < 0.70):
 			challengespam=True
 
+		# clean self.quark if it's already set and the last challenge was more than 1 min ago
+		if (timestamp-self.challengetime > 60 and self.quark!=None and self.status!=2):
+			self.quark=None
+
 		self.lastmsgtime = timestamp
 
 		# if we can't find the client, tell the user that this client has parted:
@@ -1305,7 +1310,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.send_queue.append(response)
 
 		# check that user is connected, in available state and in the same channel, and we're not playing
-		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick and client!=self and challengespam==False):
+		if (client.status==0 and client.channel==self.channel and self.channel.name==channel and self.status<2 and nick!=self.nick and client!=self and challengespam==False and self.quark==None):
+
+			self.challengetime = timestamp
 
 			# send ACK to the initiator of the challenge request
 			self.send_ack(sequence)
@@ -1333,10 +1340,17 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 	def handle_accept(self, params):
 		nick, channel, sequence = params
 
-		# make sure that nick has challenged the user that is doing the accept command
 		client = self.get_client_from_nick(nick)
 
-		if self.host not in client.challenging:
+		# this must be int as we use it for quark too
+		timestamp = int(time.time())
+
+		# clean self.quark if it's already set and the last challenge was more than 1 min ago
+		if (timestamp-self.challengetime > 60 and self.quark!=None and self.status!=2):
+			self.quark=None
+
+		# make sure that nick has challenged the user that is doing the accept command
+		if self.host not in client.challenging or self.quark!=None or client.quark!=None:
 			# send the NOACK to the client
 			response = self.reply(sequence,'\x00\x00\x00\x0c')
 			logging.debug('[%s] accept NO_ACK: %r' % (self.client_ident(), response))
@@ -1347,11 +1361,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			client.challenging.clear()
 			self.challenging.clear()
 
-		timestamp = int(time.time())
 		random1=random.randint(1000,9999)
 		random2=random.randint(10,99)
 		quark="challenge-"+str(random1)+"-"+str(timestamp)+"."+str(random2)
 
+		self.challengetime = timestamp
 		self.quark=quark
 		client.quark=quark
 
