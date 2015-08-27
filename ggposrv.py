@@ -1618,8 +1618,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			self.previous_status = status
 			return
 		elif (status>=0 and status<2) or (status==2 and sequence==0):
-			self.previous_status = self.status
 			self.status = status
+                        if (status!=2):
+                                self.previous_status = status
 		else:
 			# do nothing if the user tries to set an invalid status
 			logging.info('[%s]: trying to set invalid status: %d , self.status=%d, sequence=%d, self.opponent=%s' % (self.client_ident(), status, self.status, sequence, self.opponent))
