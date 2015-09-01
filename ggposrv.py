@@ -1588,16 +1588,18 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		# check for multiple connections from the same ip address
 		same_ip=0
+		clone_port=0
 		clients = dict(self.server.clients)
 		try:
 			for client_nick in clients:
 				if self.server.clients[client_nick].host[0]==self.host[0]:
 					same_ip+=1
+					clone_port=self.server.clients[client_nick].port
 		except KeyError:
 			pass
 		#logging.info("[%s] connections from host %s -> %d" % (self.client_ident(), self.host[0], same_ip))
 
-		if same_ip >= 2:
+		if (same_ip >= 2) or (same_ip == 1 and clone_port!=port):
 			self.nick = nick
 			logging.info("[%s] too many connections from host %s" % (self.client_ident(), self.host[0]))
 			self.kick_client(sequence,9)
