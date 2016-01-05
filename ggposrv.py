@@ -2435,6 +2435,7 @@ class GGPOServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.channels['panicbom']=GGPOChannel("panicbom", "panicbom", 'Panic Bomber')
 		self.channels['pbobbl2n']=GGPOChannel("pbobbl2n", "pbobbl2n", 'Puzzle Bobble 2', '', 1096)
 		self.channels['pbobblen']=GGPOChannel("pbobblen", "pbobblen", 'Puzzle Bobble (set 1)')
+		self.channels['pdrift']=GGPOChannel("pdrift", "pdrift", 'Power Drift (World, Rev A)')
 		self.channels['pgoal']=GGPOChannel("pgoal", "pgoal", 'Pleasure Goal - 5 on 5 mini soccer')
 		self.channels['preisle2']=GGPOChannel("preisle2", "preisle2", 'Prehistoric Isle 2')
 		self.channels['progear']=GGPOChannel("progear", "progear", 'Progear (010117 USA)', '', 376)
